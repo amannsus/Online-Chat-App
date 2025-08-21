@@ -1,12 +1,11 @@
-import React, { useEffect } from "react";
-import { Routes, Route, Navigate } from "react-router-dom";
-import Navbar from "./components/Navbar";
 import HomePage from "./pages/HomePage";
-import ChatPage from "./pages/ChatPage";
 import SignUpPage from "./pages/SignUpPage";
 import LoginPage from "./pages/LoginPage";
 import SettingsPage from "./pages/SettingsPage";
 import ProfilePage from "./pages/ProfilePage";
+import ChatPage from "./pages/ChatPage";
+import { Routes, Route, Navigate } from "react-router-dom";
+import { useEffect } from "react";
 import { useAuthStore } from "./store/useAuthStore";
 import { Loader } from "lucide-react";
 import { Toaster } from "react-hot-toast";
@@ -16,60 +15,54 @@ const App = () => {
 
   useEffect(() => {
     checkAuth();
-
-    // 🎨 Load saved theme and apply globally
+    // Load saved theme
     const savedTheme = localStorage.getItem('theme') || 'light';
     document.documentElement.setAttribute('data-theme', savedTheme);
-  }, []);
+  }, [checkAuth]);
 
   if (isCheckingAuth && !authUser) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <Loader className="size-10 animate-spin" />
+      <div className="flex items-center justify-center h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+        <Loader className="size-10 animate-spin text-white" />
       </div>
     );
   }
 
   return (
-    <div>
+    <div className="App">
+      {/* Navbar component removed */}
       <Routes>
-        <Route 
-          path="/signup" 
-          element={!authUser ? <SignUpPage /> : <Navigate to="/home" replace />} 
+        <Route
+          path="/"
+          element={authUser ? <Navigate to="/home" /> : <Navigate to="/login" />}
         />
-        <Route 
-          path="/login" 
-          element={!authUser ? <LoginPage /> : <Navigate to="/home" replace />} 
+        <Route
+          path="/home"
+          element={authUser ? <HomePage /> : <Navigate to="/login" />}
         />
-        <Route 
-          path="/home" 
-          element={authUser ? <HomePage /> : <Navigate to="/login" replace />} 
+        <Route
+          path="/signup"
+          element={!authUser ? <SignUpPage /> : <Navigate to="/home" />}
         />
-        {/* 🔥 Settings accessible from anywhere */}
-        <Route path="/settings" element={<SettingsPage />} />
-        <Route 
-          path="/profile" 
-          element={authUser ? <ProfilePage /> : <Navigate to="/login" replace />} 
+        <Route
+          path="/login"
+          element={!authUser ? <LoginPage /> : <Navigate to="/home" />}
         />
-        <Route path="/" element={<Navigate to="/home" replace />} />
-        <Route path="*" element={<Navigate to="/home" replace />} />
+        <Route
+          path="/settings"
+          element={authUser ? <SettingsPage /> : <Navigate to="/login" />}
+        />
+        <Route
+          path="/profile"
+          element={authUser ? <ProfilePage /> : <Navigate to="/login" />}
+        />
+        <Route
+          path="/chat"
+          element={authUser ? <ChatPage /> : <Navigate to="/login" />}
+        />
       </Routes>
 
-      <Toaster
-        position="top-center"
-        reverseOrder={false}
-        gutter={8}
-        toastOptions={{
-          duration: 4000,
-          style: {
-            background: '#363636',
-            color: '#fff',
-          },
-          success: {
-            duration: 3000,
-          },
-        }}
-      />
+      <Toaster />
     </div>
   );
 };

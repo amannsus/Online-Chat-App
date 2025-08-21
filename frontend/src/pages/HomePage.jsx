@@ -12,7 +12,7 @@ const HomePage = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
       <div className="container mx-auto px-4 py-8">
-        {/* Header with Profile and Settings */}
+        {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-3">
             <div className="size-10 rounded-lg bg-gradient-to-r from-purple-500/20 to-blue-500/20 backdrop-blur-sm flex items-center justify-center border border-white/10">
@@ -24,7 +24,6 @@ const HomePage = () => {
           <div className="flex items-center gap-4">
             {/* Profile Section with Avatar */}
             <div className="flex items-center gap-3">
-              {/* Profile Avatar */}
               <Link to="/profile" className="flex items-center gap-2 hover:bg-white/10 p-2 rounded-lg transition-colors">
                 <div className="size-10 rounded-full bg-gradient-to-r from-purple-500 to-blue-500 flex items-center justify-center">
                   {authUser?.profilePic ? (
@@ -92,8 +91,8 @@ const HomePage = () => {
               </div>
             </Link>
 
-            {/* Chat Card */}
-            <div className="group">
+            {/* Chat Card - UPDATED TO LINK TO /chat */}
+            <Link to="/chat" className="group">
               <div className="p-6 bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 hover:bg-white/10 transition-all duration-300 group-hover:scale-105">
                 <div className="size-16 mx-auto mb-4 rounded-full bg-gradient-to-r from-pink-500 to-rose-500 flex items-center justify-center">
                   <MessageSquare className="size-8 text-white" />
@@ -101,7 +100,7 @@ const HomePage = () => {
                 <h3 className="text-xl font-semibold mb-2">Start Chatting</h3>
                 <p className="text-gray-400">Connect with your friends</p>
               </div>
-            </div>
+            </Link>
           </div>
 
           {/* User Info Card */}
