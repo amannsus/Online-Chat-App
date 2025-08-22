@@ -13,7 +13,7 @@ const LoginPage = () => {
 
   const { login, isLoggingIn, authUser } = useAuthStore();
 
-  // Redirect if already authenticated
+
   if (authUser) {
     return <Navigate to="/home" replace />;
   }

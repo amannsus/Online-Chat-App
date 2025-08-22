@@ -17,7 +17,7 @@ const ProfilePage = () => {
       const base64Image = reader.result;
       setSelectedImg(base64Image);
       
-      // Send base64 directly to backend (matches your controller)
+  
       await updateProfile({ profilePic: base64Image });
     };
   };

@@ -5,19 +5,32 @@ import SettingsPage from "./pages/SettingsPage";
 import ProfilePage from "./pages/ProfilePage";
 import ChatPage from "./pages/ChatPage";
 import { Routes, Route, Navigate } from "react-router-dom";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useAuthStore } from "./store/useAuthStore";
 import { Loader } from "lucide-react";
 import { Toaster } from "react-hot-toast";
 
 const App = () => {
   const { authUser, checkAuth, isCheckingAuth } = useAuthStore();
+  const [currentTheme, setCurrentTheme] = useState('light');
 
   useEffect(() => {
     checkAuth();
-    // Load saved theme
     const savedTheme = localStorage.getItem('theme') || 'light';
+    setCurrentTheme(savedTheme);
     document.documentElement.setAttribute('data-theme', savedTheme);
+    
+    const handleThemeChange = (event) => {
+      const newTheme = localStorage.getItem('theme') || 'light';
+      setCurrentTheme(newTheme);
+      document.documentElement.setAttribute('data-theme', newTheme);
+    };
+    
+    window.addEventListener('themechange', handleThemeChange);
+    
+    return () => {
+      window.removeEventListener('themechange', handleThemeChange);
+    };
   }, [checkAuth]);
 
   if (isCheckingAuth && !authUser) {
@@ -29,8 +42,7 @@ const App = () => {
   }
 
   return (
-    <div className="App">
-      {/* Navbar component removed */}
+    <div className="App" data-theme={currentTheme}>
       <Routes>
         <Route
           path="/"

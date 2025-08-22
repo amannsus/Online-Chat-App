@@ -13,8 +13,12 @@ export const useAuthStore = create((set, get) => ({
     try {
       const res = await axiosInstance.get('/auth/check');
       set({ authUser: res.data });
+      
+      if (res.data) {
+        const { useChatStore } = await import("./useChatStore.js");
+        useChatStore.getState().connectSocket(res.data._id);
+      }
     } catch (error) {
-      console.log("Error in checkAuth:", error);
       set({ authUser: null });
     } finally {
       set({ isCheckingAuth: false });
@@ -27,6 +31,9 @@ export const useAuthStore = create((set, get) => ({
       const res = await axiosInstance.post("/auth/signup", data);
       set({ authUser: res.data });
       toast.success("Account created successfully!");
+      
+      const { useChatStore } = await import("./useChatStore.js");
+      useChatStore.getState().connectSocket(res.data._id);
     } catch (error) {
       console.error("Signup error:", error);
       toast.error(error.response?.data?.message || "Something went wrong");
@@ -41,6 +48,9 @@ export const useAuthStore = create((set, get) => ({
       const res = await axiosInstance.post("/auth/login", data);
       set({ authUser: res.data });
       toast.success("Logged in successfully!");
+      
+      const { useChatStore } = await import("./useChatStore.js");
+      useChatStore.getState().connectSocket(res.data._id);
     } catch (error) {
       console.error("Login error:", error);
       toast.error(error.response?.data?.message || "Something went wrong");
@@ -57,7 +67,7 @@ export const useAuthStore = create((set, get) => ({
       toast.success("Profile updated successfully!");
     } catch (error) {
       console.error("Profile update error:", error);
-      toast.error(error.response?.data?.message || "Something went wrong");
+      toast.error("Failed to update profile");
     } finally {
       set({ isUpdatingProfile: false });
     }
@@ -67,10 +77,15 @@ export const useAuthStore = create((set, get) => ({
     try {
       await axiosInstance.post("/auth/logout");
       set({ authUser: null });
+      
+      const { useChatStore } = await import("./useChatStore.js");
+      useChatStore.getState().disconnectSocket();
       toast.success("Logged out successfully!");
     } catch (error) {
       console.error("Logout error:", error);
-      toast.error(error.response?.data?.message || "Something went wrong");
+      toast.error("Failed to logout");
     }
   },
 }));
+
+export default useAuthStore;

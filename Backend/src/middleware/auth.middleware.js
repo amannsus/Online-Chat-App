@@ -25,9 +25,47 @@ export const protectRoute = async (req, res, next) => {
 
         next();
 
-    } catch (error) { 
-        console.log("Error in protectRoute middleware: ", error.message);
-        res.status(500).json({ message: "Internal server error" });
-    }
+      } catch (error) { 
+    res.status(500).json({ message: "Internal server error" });
+  }
 
 };
+
+export const socketAuth = async (socket, next) => {
+    try {
+        const cookies = socket.handshake.headers.cookie;
+        let token = null;
+        
+        if (cookies) {
+            const jwtCookie = cookies.split(';').find(cookie => cookie.trim().startsWith('jwt='));
+            if (jwtCookie) {
+                token = jwtCookie.split('=')[1];
+            }
+        }
+        
+        if (!token) {
+            return next(new Error('Authentication error: No token provided'));
+        }
+
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        
+        if (!decoded) {
+            return next(new Error('Authentication error: Invalid token'));
+        }
+
+        const user = await User.findById(decoded.userId).select("-password");
+        
+        if (!user) {
+            return next(new Error('Authentication error: User not found'));
+        }
+
+        socket.userId = user._id;
+        socket.user = user;
+        
+        next();
+      } catch (error) {
+    next(new Error('Authentication error: ' + error.message));
+  }
+};
+
+export default socketAuth;

@@ -1,33 +1,59 @@
 import React, { useRef, useEffect, useState } from "react";
-import { SendHorizontal, Paperclip, Smile, Image, FileText, X } from "lucide-react";
+import { SendHorizontal, Paperclip, Smile, Image, FileText, X, Users, Settings, LogOut, Trash2 } from "lucide-react";
 import { useAuthStore } from "../store/useAuthStore";
+import { useChatStore } from "../store/useChatStore";
 import EmojiPicker from 'emoji-picker-react';
-
-const mockMessages = [
-  { id: 1, user: "Jane Doe", avatar: "/avatar.png", text: "Hey jane it's me from react app", time: "22:40", sent: true },
-  { id: 2, user: "Jane Doe", avatar: "/avatar.png", text: "hey!", time: "22:41", sent: false },
-  { id: 3, user: "Jane Doe", avatar: "/avatar.png", text: "hey this is me in REAL LIFE", time: "22:43", sent: true },
-];
+import TypingIndicator from './TypingIndicator';
+import GroupSettingsModal from './GroupSettingsModal';
 
 const ChatContainer = () => {
   const { authUser } = useAuthStore();
+  const { 
+    selectedContact,
+    selectedGroup,
+    messages, 
+    sendMessage, 
+    typingUsers, 
+    contacts, 
+    emitTyping, 
+    emitStopTyping,
+    loadMessages,
+    clearIndividualChat,
+    clearGroupChat,
+    getMessageRetentionInfo
+  } = useChatStore();
+
   const [message, setMessage] = useState("");
-  const [messages, setMessages] = useState(mockMessages);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showAttachMenu, setShowAttachMenu] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
   const [filePreview, setFilePreview] = useState(null);
-  
+  const [isTyping, setIsTyping] = useState(false);
+  const [showGroupSettings, setShowGroupSettings] = useState(false);
+
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
+  const imageInputRef = useRef(null);
   const emojiPickerRef = useRef(null);
   const attachMenuRef = useRef(null);
+  const typingTimeoutRef = useRef(null);
+
+  const currentChat = selectedContact || selectedGroup;
+  const isGroupChat = !!selectedGroup;
+  const chatId = currentChat?._id;
+
+  useEffect(() => {
+    if (chatId) {
+      loadMessages(chatId);
+    }
+  }, [chatId, loadMessages]);
+
+  const currentMessages = chatId ? messages[chatId] || [] : [];
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  }, [currentMessages]);
 
-  // Close menus when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (emojiPickerRef.current && !emojiPickerRef.current.contains(event.target)) {
@@ -41,32 +67,44 @@ const ChatContainer = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const handleSend = () => {
-    if (message.trim() || selectedFile) {
-      const newMessage = {
-        id: Date.now(),
-        user: authUser?.fullName || "You",
-        text: message,
-        time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-        sent: true,
+  const handleTyping = () => {
+    if (!isTyping && chatId) {
+      setIsTyping(true);
+      emitTyping(chatId);
+    }
+
+    clearTimeout(typingTimeoutRef.current);
+    typingTimeoutRef.current = setTimeout(() => {
+      setIsTyping(false);
+      if (chatId) {
+        emitStopTyping(chatId);
+      }
+    }, 1000);
+  };
+
+  const handleSend = async () => {
+    if ((!message.trim() && !selectedFile) || !chatId) return;
+
+    try {
+      const messageData = {
+        text: message.trim(),
+        image: selectedFile && selectedFile.type.startsWith('image/') ? filePreview : null
       };
 
-      // Add file attachment if exists
-      if (selectedFile) {
-        newMessage.file = {
-          name: selectedFile.name,
-          type: selectedFile.type,
-          url: filePreview,
-          size: selectedFile.size
-        };
-      }
-
-      setMessages(prev => [...prev, newMessage]);
+      await sendMessage(chatId, messageData);
+      
       setMessage("");
       setSelectedFile(null);
       setFilePreview(null);
       setShowEmojiPicker(false);
       setShowAttachMenu(false);
+
+      if (isTyping) {
+        setIsTyping(false);
+        emitStopTyping(chatId);
+      }
+    } catch (error) {
+      console.error('Send message error:', error);
     }
   };
 
@@ -77,16 +115,20 @@ const ChatContainer = () => {
     }
   };
 
+  const handleInputChange = (e) => {
+    setMessage(e.target.value);
+    handleTyping();
+  };
+
   const onEmojiClick = (emojiObject) => {
     setMessage(prev => prev + emojiObject.emoji);
   };
 
-  const handleFileSelect = (e) => {
+  const handleFileSelect = (e, type) => {
     const file = e.target.files[0];
     if (file) {
       setSelectedFile(file);
       
-      // Create preview for images
       if (file.type.startsWith('image/')) {
         const reader = new FileReader();
         reader.onload = () => setFilePreview(reader.result);
@@ -102,16 +144,8 @@ const ChatContainer = () => {
   const removeSelectedFile = () => {
     setSelectedFile(null);
     setFilePreview(null);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
-  };
-
-  const getUserAvatar = (isCurrentUser) => {
-    if (isCurrentUser) {
-      return authUser?.profilePic || "/avatar.png";
-    }
-    return "/avatar.png";
+    if (fileInputRef.current) fileInputRef.current.value = '';
+    if (imageInputRef.current) imageInputRef.current.value = '';
   };
 
   const formatFileSize = (bytes) => {
@@ -122,194 +156,331 @@ const ChatContainer = () => {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
-  const renderMessage = (msg) => {
+  const renderMessage = (msg, index) => {
+    const isCurrentUser = msg.senderId === authUser._id || msg.senderId?._id === authUser._id;
+    const senderName = msg.senderId?.fullName || 'Unknown';
+    
+    const messageKey = msg._id || `msg_${index}_${msg.senderId}_${msg.createdAt}_${msg.text?.substring(0, 10)}`;
+    
     return (
-      <div key={msg.id} className={`flex ${msg.sent ? "justify-end" : "justify-start"} group mb-4`}>
-        {!msg.sent && (
-          <img 
-            src={getUserAvatar(false)} 
-            alt="" 
-            className="w-8 h-8 rounded-full object-cover mr-3 self-end" 
-          />
-        )}
-        
-        <div className="max-w-xs">
-          <div className={`p-3 rounded-2xl ${
-            msg.sent
-              ? "bg-[#3C1866] text-white rounded-br-sm"
-              : "bg-[#2c2236] text-zinc-100 rounded-bl-sm"
-          }`}>
-            {msg.text && <p className="mb-2">{msg.text}</p>}
-            
-            {/* Render file attachment */}
-            {msg.file && (
-              <div className="mt-2">
-                {msg.file.type.startsWith('image/') ? (
-                  <img 
-                    src={msg.file.url} 
-                    alt={msg.file.name}
-                    className="max-w-full h-auto rounded-lg cursor-pointer"
-                    onClick={() => window.open(msg.file.url, '_blank')}
-                  />
-                ) : (
-                  <div className="flex items-center gap-2 p-2 bg-white/10 rounded-lg">
-                    <FileText className="w-6 h-6 text-blue-400" />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{msg.file.name}</p>
-                      <p className="text-xs text-gray-400">{formatFileSize(msg.file.size)}</p>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
+      <div
+        key={messageKey}
+        className={`flex ${isCurrentUser ? "justify-end" : "justify-start"} mb-4`}
+      >
+        <div
+          className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
+            isCurrentUser
+              ? "bg-primary text-primary-content"
+              : "bg-base-300 text-base-content"
+          }`}
+        >
+          {isGroupChat && !isCurrentUser && (
+            <p className="text-xs font-semibold mb-1 opacity-70">
+              {senderName}
+            </p>
+          )}
           
-          <div className={`text-xs mt-1 ${msg.sent ? "text-right" : "text-left"} text-violet-300`}>
-            {msg.time}
-          </div>
+          {msg.text && <p className="text-sm">{msg.text}</p>}
+          
+          {msg.image && (
+            <img 
+              src={msg.image} 
+              alt="Message attachment" 
+              className="mt-2 max-w-full rounded cursor-pointer"
+              onClick={() => window.open(msg.image, '_blank')}
+            />
+          )}
+          
+          {msg.file && !msg.file.type?.startsWith('image/') && (
+            <div className="mt-2 p-2 bg-base-100 rounded border">
+              <div className="flex items-center gap-2">
+                <FileText className="w-4 h-4" />
+                <span className="text-sm font-medium">{msg.file.name}</span>
+              </div>
+              <p className="text-xs text-base-content/70">
+                {formatFileSize(msg.file.size)}
+              </p>
+              <a 
+                href={msg.file.url} 
+                download={msg.file.name}
+                className="text-xs text-primary hover:underline"
+              >
+                Download
+              </a>
+            </div>
+          )}
+          
+          <p className="text-xs mt-1 opacity-70">
+            {new Date(msg.createdAt || Date.now()).toLocaleTimeString([], { 
+              hour: "2-digit", 
+              minute: "2-digit" 
+            })}
+          </p>
+
+          {isCurrentUser && (
+            <div className="flex items-center justify-end mt-1">
+              {msg.sent && (
+                <span className="text-xs opacity-70">
+                  ✓ Sent
+                </span>
+              )}
+            </div>
+          )}
         </div>
-        
-        {msg.sent && (
-          <img 
-            src={getUserAvatar(true)} 
-            alt="" 
-            className="w-8 h-8 rounded-full object-cover ml-3 self-end" 
-          />
-        )}
       </div>
     );
   };
 
+  if (!currentChat) {
+    return (
+      <div className="flex-1 flex items-center justify-center bg-base-100">
+        <div className="text-center">
+          <div className="text-6xl mb-4">💬</div>
+          <h3 className="text-xl font-semibold text-base-content/70 mb-2">
+            Welcome to Chatty!
+          </h3>
+          <p className="text-base-content/50">
+            Select a contact or group to start chatting
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex flex-col h-full">
-      {/* Chat Header */}
-      <div className="flex items-center gap-4 px-6 py-4 border-b border-[#372945]/40 bg-[#232243]/80">
-        <img src="/avatar.png" alt="" className="w-10 h-10 rounded-full object-cover" />
-        <div>
-          <div className="font-semibold text-white">Jane Doe</div>
-          <div className="text-xs text-green-400">Online</div>
+    <div className="flex-1 flex flex-col bg-base-100">
+      <div className="p-4 border-b border-base-300 bg-base-200">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="size-10 rounded-full bg-primary/10 flex items-center justify-center">
+              {currentChat.avatar || currentChat.profilePic ? (
+                <img 
+                  src={currentChat.avatar || currentChat.profilePic} 
+                  alt={currentChat.name || currentChat.fullName} 
+                  className="size-10 rounded-full object-cover"
+                />
+              ) : (
+                <span className="text-primary font-semibold">
+                  {isGroupChat ? (
+                    <Users className="size-5" />
+                  ) : (
+                    currentChat.fullName?.charAt(0) || 'U'
+                  )}
+                </span>
+              )}
+            </div>
+            <div>
+              <h3 className="font-semibold">
+                {isGroupChat ? currentChat.name : currentChat.fullName}
+              </h3>
+              <p className="text-sm text-base-content/70">
+                {isGroupChat 
+                  ? `${currentChat.members?.length || 0} members`
+                  : (currentChat.online ? 'Online' : 'Offline')
+                }
+              </p>
+            </div>
+          </div>
+
+          {isGroupChat && (
+            <div className="flex items-center gap-2">
+              <button 
+                onClick={() => {
+                  if (window.confirm(`Are you sure you want to leave "${currentChat.name}"?`)) {
+                    useChatStore.getState().leaveGroup(currentChat._id);
+                  }
+                }}
+                className="btn btn-ghost btn-sm text-error hover:bg-error/10"
+                title="Leave Group"
+              >
+                <LogOut className="size-4" />
+                Leave
+              </button>
+              <button 
+                onClick={() => setShowGroupSettings(true)}
+                className="btn btn-ghost btn-sm"
+                title="Group Settings"
+              >
+                <Settings className="size-4" />
+                Settings
+              </button>
+            </div>
+          )}
+
+          {!isGroupChat && (
+            <div className="flex items-center gap-2">
+              <button 
+                onClick={async () => {
+                  const retentionInfo = await getMessageRetentionInfo(chatId, false);
+                  const confirmMessage = `Are you sure you want to clear all chat history with ${currentChat.fullName}?\n\nThis will delete all messages permanently.\n\nNote: Messages are automatically deleted after ${retentionInfo.messageRetentionDays} days.`;
+                  
+                  if (window.confirm(confirmMessage)) {
+                    await clearIndividualChat(chatId);
+                  }
+                }}
+                className="btn btn-ghost btn-sm text-warning hover:bg-warning/10"
+                title="Clear Chat History"
+              >
+                <Trash2 className="size-4" />
+                Clear Chat
+              </button>
+            </div>
+          )}
+
+          {isGroupChat && (
+            <div className="flex items-center gap-2">
+              <button 
+                onClick={async () => {
+                  const retentionInfo = await getMessageRetentionInfo(chatId, true);
+                  const confirmMessage = `Are you sure you want to clear all group chat history?\n\nThis will delete all messages permanently.\n\nNote: Messages are automatically deleted after ${retentionInfo.messageRetentionDays} days.`;
+                  
+                  if (window.confirm(confirmMessage)) {
+                    await clearGroupChat(chatId);
+                  }
+                }}
+                className="btn btn-ghost btn-sm text-warning hover:bg-warning/10"
+                title="Clear Group Chat History (Admin Only)"
+              >
+                <Trash2 className="size-4" />
+                Clear Chat
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Messages Area */}
-      <div className="flex-1 p-6 overflow-y-auto bg-[#251932]">
-        <div className="flex flex-col">
-          {messages.map(renderMessage)}
-          <div ref={messagesEndRef}></div>
-        </div>
+      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        {currentMessages.length === 0 ? (
+          <div className="text-center text-base-content/50 mt-20">
+            <p>No messages yet. Start the conversation!</p>
+          </div>
+        ) : (
+          currentMessages.map((msg, index) => renderMessage(msg, index))
+        )}
+        
+        <TypingIndicator 
+          typingUsers={typingUsers} 
+          contacts={contacts} 
+          isGroup={isGroupChat}
+        />
+        
+        <div ref={messagesEndRef} />
       </div>
 
-      {/* File Preview */}
       {selectedFile && (
-        <div className="px-6 py-3 bg-[#20122d] border-t border-[#372945]/40">
-          <div className="flex items-center gap-3 p-3 bg-[#2c2236] rounded-lg">
+        <div className="px-4 py-2 border-t border-base-300 bg-base-200">
+          <div className="flex items-center gap-3 p-2 bg-base-100 rounded">
             {filePreview ? (
               <img src={filePreview} alt="Preview" className="w-12 h-12 object-cover rounded" />
             ) : (
-              <FileText className="w-12 h-12 text-blue-400" />
+              <FileText className="w-12 h-12 text-base-content/50" />
             )}
             <div className="flex-1 min-w-0">
-              <p className="text-white text-sm font-medium truncate">{selectedFile.name}</p>
-              <p className="text-gray-400 text-xs">{formatFileSize(selectedFile.size)}</p>
+              <p className="font-medium truncate">{selectedFile.name}</p>
+              <p className="text-sm text-base-content/70">
+                {formatFileSize(selectedFile.size)}
+              </p>
             </div>
-            <button 
+            <button
               onClick={removeSelectedFile}
-              className="p-1 text-gray-400 hover:text-red-400 transition-colors"
+              className="btn btn-ghost btn-sm"
             >
-              <X size={16} />
+              <X className="w-4 h-4" />
             </button>
           </div>
         </div>
       )}
 
-      {/* Message Input */}
-      <div className="p-4 bg-[#20122d] border-t border-[#372945]/40 relative">
-        {/* Emoji Picker */}
+      <div className="p-4 border-t border-base-300">
         {showEmojiPicker && (
-          <div ref={emojiPickerRef} className="absolute bottom-16 left-4 z-50">
-            <EmojiPicker 
-              onEmojiClick={onEmojiClick}
-              theme="dark"
-              width={300}
-              height={400}
+          <div className="absolute bottom-20 left-4 z-10">
+            <EmojiPicker onEmojiClick={onEmojiClick} />
+          </div>
+        )}
+
+        {showAttachMenu && (
+          <div 
+            ref={attachMenuRef}
+            className="absolute bottom-20 right-20 z-10 bg-base-200 shadow-lg rounded-lg p-2 border"
+          >
+            <button
+              onClick={() => imageInputRef.current?.click()}
+              className="flex items-center gap-2 w-full p-2 hover:bg-base-300 rounded text-left"
+            >
+              <Image className="w-5 h-5" />
+              <span>Photo</span>
+            </button>
+            
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="flex items-center gap-2 w-full p-2 hover:bg-base-300 rounded text-left"
+            >
+              <FileText className="w-5 h-5" />
+              <span>Document</span>
+            </button>
+            
+            <input
+              ref={imageInputRef}
+              type="file"
+              accept="image/*"
+              onChange={(e) => handleFileSelect(e, 'image')}
+              className="hidden"
+            />
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".pdf,.doc,.docx,.txt,.xls,.xlsx,.ppt,.pptx"
+              onChange={(e) => handleFileSelect(e, 'file')}
+              className="hidden"
             />
           </div>
         )}
 
-        {/* Attachment Menu */}
-        {showAttachMenu && (
-          <div 
-            ref={attachMenuRef}
-            className="absolute bottom-16 left-14 bg-[#2c2236] rounded-lg p-2 shadow-xl border border-[#372945] z-40"
-          >
-            <button
-              onClick={() => {
-                fileInputRef.current?.click();
-                setShowAttachMenu(false);
-              }}
-              className="flex items-center gap-3 w-full px-4 py-2 text-white hover:bg-[#372945] rounded-lg transition-colors"
-            >
-              <Image size={18} className="text-green-400" />
-              <span>Image</span>
-            </button>
-            <button
-              onClick={() => {
-                fileInputRef.current?.click();
-                setShowAttachMenu(false);
-              }}
-              className="flex items-center gap-3 w-full px-4 py-2 text-white hover:bg-[#372945] rounded-lg transition-colors"
-            >
-              <FileText size={18} className="text-blue-400" />
-              <span>Document</span>
-            </button>
-          </div>
-        )}
-
-        <div className="flex items-center gap-3">
-          {/* Attachment Button */}
-          <button 
-            onClick={() => setShowAttachMenu(!showAttachMenu)}
-            className="p-2 text-gray-400 hover:text-white transition-colors"
-          >
-            <Paperclip size={20} />
-          </button>
-
-          {/* Emoji Button */}
-          <button 
+        <div className="flex items-center gap-2">
+          <button
             onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-            className="p-2 text-gray-400 hover:text-yellow-400 transition-colors"
+            className="btn btn-ghost btn-sm"
+            type="button"
           >
-            <Smile size={20} />
+            <Smile className="size-5" />
           </button>
 
-          {/* Message Input */}
           <input
-            className="flex-1 rounded-full px-4 py-3 bg-[#2c2236] text-white border border-[#382e44]/30 outline-none focus:ring-2 focus:ring-violet-600 transition placeholder-gray-500"
-            placeholder="Type a message..."
+            type="text"
             value={message}
-            onChange={(e) => setMessage(e.target.value)}
+            onChange={handleInputChange}
             onKeyPress={handleKeyPress}
+            placeholder={`Message ${isGroupChat ? currentChat.name : currentChat.fullName}...`}
+            className="input input-bordered flex-1"
           />
 
-          {/* Send Button */}
+          <button
+            onClick={() => setShowAttachMenu(!showAttachMenu)}
+            className="btn btn-ghost btn-sm"
+            type="button"
+          >
+            <Paperclip className="size-5" />
+          </button>
+
           <button
             onClick={handleSend}
-            className="p-3 bg-violet-600 rounded-full text-white hover:bg-violet-700 transition-colors"
-            aria-label="Send message"
+            disabled={!message.trim() && !selectedFile}
+            className="btn btn-primary"
+            type="button"
           >
-            <SendHorizontal size={20} />
+            <SendHorizontal className="size-5" />
           </button>
         </div>
-
-        {/* Hidden File Input */}
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*,.pdf,.doc,.docx,.txt,.zip,.rar"
-          onChange={handleFileSelect}
-          className="hidden"
-        />
       </div>
+
+      <GroupSettingsModal 
+        isOpen={showGroupSettings} 
+        onClose={() => setShowGroupSettings(false)} 
+        group={currentChat} 
+        onGroupUpdated={(updatedGroup) => {
+          
+        }}
+      />
     </div>
   );
 };

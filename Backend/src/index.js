@@ -1,34 +1,58 @@
 import express from "express";
+import http from "http";
+import { Server } from "socket.io";
 import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
 import cors from "cors";
+
 import { connectDB } from "./lib/db.js";
+import { scheduleMessageCleanup } from "./lib/utils.js";
 import authRoutes from "./routes/auth.route.js";
 import messageRoutes from "./routes/message.route.js";
+import userRoutes from "./routes/user.route.js";
+import groupRoutes from "./routes/group.route.js";
+import handleConnection from "./socket/socketHandler.js";
 
 dotenv.config();
 
 const app = express();
+const server = http.createServer(app);
+
+const io = new Server(server, {
+  cors: {
+    origin: "http://localhost:5173",
+    methods: ["GET", "POST"],
+    credentials: true
+  }
+});
+
+app.set('io', io);
 
 const PORT = process.env.PORT || 5001;
 
-// 🔧 FIX: Increase payload size limit to handle base64 images
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ limit: "10mb", extended: true }));
-
 app.use(cookieParser());
 
-app.use(
-  cors({
-    origin: "http://localhost:5173",
-    credentials: true,
-  })
-);
+app.use(cors({
+  origin: "http://localhost:5173",
+  credentials: true,
+}));
 
 app.use("/api/auth", authRoutes);
 app.use("/api/message", messageRoutes);
+app.use("/api/users", userRoutes);
+app.use("/api/groups", groupRoutes);
 
-app.listen(PORT, () => {
-  console.log("server is running on PORT:" + PORT);
-  connectDB();
+handleConnection(io);
+
+server.listen(PORT, async () => {
+  try {
+    await connectDB();
+    scheduleMessageCleanup();
+    console.log(`🚀 Server running on port ${PORT}`);
+  } catch (error) {
+    console.error("❌ Server startup failed:", error.message);
+    process.exit(1);
+  }
 });

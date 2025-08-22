@@ -44,25 +44,30 @@ const SettingsPage = () => {
   useEffect(() => {
     const savedTheme = localStorage.getItem('theme') || 'light';
     setCurrentTheme(savedTheme);
+    document.documentElement.setAttribute('data-theme', savedTheme);
   }, []);
 
   const handleThemeChange = (themeName) => {
-    // Apply theme instantly
-    document.documentElement.setAttribute('data-theme', themeName);
-    
-    // Save to localStorage for persistence
-    localStorage.setItem('theme', themeName);
-    
-    // Update state
-    setCurrentTheme(themeName);
-    
-    // Show feedback
-    toast.success(`${themes.find(t => t.name === themeName)?.label} theme applied!`);
+    try {
+      const html = document.documentElement;
+      
+      html.removeAttribute('data-theme');
+      html.setAttribute('data-theme', themeName);
+      
+      localStorage.setItem('theme', themeName);
+      setCurrentTheme(themeName);
+      
+      toast.success(`${themes.find(t => t.name === themeName)?.label} theme applied!`);
+      
+      window.dispatchEvent(new Event('themechange'));
+    } catch (error) {
+      console.error('Error applying theme:', error);
+      toast.error('Failed to apply theme');
+    }
   };
 
   return (
     <div className="min-h-screen bg-base-100 text-base-content transition-colors duration-300">
-      {/* Header */}
       <div className="navbar bg-base-200 shadow-sm">
         <div className="navbar-start">
           <Link to="/" className="btn btn-ghost btn-sm gap-2">
@@ -79,15 +84,12 @@ const SettingsPage = () => {
         <div className="navbar-end"></div>
       </div>
 
-      {/* Content */}
       <div className="container mx-auto px-4 py-8 max-w-7xl">
-        {/* Theme Section Header */}
         <div className="mb-8">
           <h2 className="text-3xl font-bold mb-2">Theme</h2>
           <p className="text-base-content/70 text-lg">Choose a theme for your chat interface</p>
         </div>
         
-        {/* Theme Grid */}
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-4 mb-8">
           {themes.map((theme) => (
             <div
@@ -97,9 +99,7 @@ const SettingsPage = () => {
               }`}
               onClick={() => handleThemeChange(theme.name)}
             >
-              {/* Theme Preview Card */}
               <div className="bg-base-200 rounded-lg p-3 border border-base-300 hover:shadow-lg hover:border-primary/30 transition-all duration-300">
-                {/* Color Swatches */}
                 <div className="flex rounded-md overflow-hidden mb-3 h-8 shadow-sm">
                   {theme.colors.map((color, index) => (
                     <div
@@ -110,7 +110,6 @@ const SettingsPage = () => {
                   ))}
                 </div>
                 
-                {/* Theme Name & Check */}
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium capitalize text-base-content group-hover:text-primary transition-colors">
                     {theme.label}
@@ -123,13 +122,11 @@ const SettingsPage = () => {
                 </div>
               </div>
 
-              {/* Hover Overlay */}
               <div className="absolute inset-0 bg-primary/10 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
             </div>
           ))}
         </div>
 
-        {/* Current Theme Info */}
         <div className="bg-base-200 rounded-xl p-6 border border-base-300 shadow-sm">
           <div className="flex items-center gap-4 mb-4">
             <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center">
@@ -143,18 +140,6 @@ const SettingsPage = () => {
                 </span> theme
               </p>
             </div>
-          </div>
-          
-          <div className="text-sm text-base-content/60">
-            <p className="mb-2">✅ Theme applied across all pages</p>
-            <p className="mb-2">✅ Automatically saved to your browser</p>
-            <p>✅ Persists after refresh and restart</p>
-          </div>
-
-          <div className="flex flex-wrap gap-2 mt-4">
-            <div className="badge badge-primary">Auto-saved</div>
-            <div className="badge badge-secondary">Real-time</div>
-            <div className="badge badge-accent">Persistent</div>
           </div>
         </div>
       </div>
