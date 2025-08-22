@@ -3,7 +3,6 @@ import { SendHorizontal, Paperclip, Smile, Image, FileText, X, Users, Settings, 
 import { useAuthStore } from "../store/useAuthStore";
 import { useChatStore } from "../store/useChatStore";
 import EmojiPicker from 'emoji-picker-react';
-import TypingIndicator from './TypingIndicator';
 import GroupSettingsModal from './GroupSettingsModal';
 
 const ChatContainer = () => {
@@ -13,10 +12,7 @@ const ChatContainer = () => {
     selectedGroup,
     messages, 
     sendMessage, 
-    typingUsers, 
     contacts, 
-    emitTyping, 
-    emitStopTyping,
     loadMessages,
     clearIndividualChat,
     clearGroupChat,
@@ -28,7 +24,7 @@ const ChatContainer = () => {
   const [showAttachMenu, setShowAttachMenu] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
   const [filePreview, setFilePreview] = useState(null);
-  const [isTyping, setIsTyping] = useState(false);
+
   const [showGroupSettings, setShowGroupSettings] = useState(false);
 
   const messagesEndRef = useRef(null);
@@ -36,7 +32,7 @@ const ChatContainer = () => {
   const imageInputRef = useRef(null);
   const emojiPickerRef = useRef(null);
   const attachMenuRef = useRef(null);
-  const typingTimeoutRef = useRef(null);
+
 
   const currentChat = selectedContact || selectedGroup;
   const isGroupChat = !!selectedGroup;
@@ -67,20 +63,7 @@ const ChatContainer = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const handleTyping = () => {
-    if (!isTyping && chatId) {
-      setIsTyping(true);
-      emitTyping(chatId);
-    }
 
-    clearTimeout(typingTimeoutRef.current);
-    typingTimeoutRef.current = setTimeout(() => {
-      setIsTyping(false);
-      if (chatId) {
-        emitStopTyping(chatId);
-      }
-    }, 1000);
-  };
 
   const handleSend = async () => {
     if ((!message.trim() && !selectedFile) || !chatId) return;
@@ -98,11 +81,6 @@ const ChatContainer = () => {
       setFilePreview(null);
       setShowEmojiPicker(false);
       setShowAttachMenu(false);
-
-      if (isTyping) {
-        setIsTyping(false);
-        emitStopTyping(chatId);
-      }
     } catch (error) {
       console.error('Send message error:', error);
     }
@@ -115,9 +93,8 @@ const ChatContainer = () => {
     }
   };
 
-  const handleInputChange = (e) => {
+  const handleMessageChange = (e) => {
     setMessage(e.target.value);
-    handleTyping();
   };
 
   const onEmojiClick = (emojiObject) => {
@@ -315,7 +292,7 @@ const ChatContainer = () => {
                   const confirmMessage = `Are you sure you want to clear all chat history with ${currentChat.fullName}?\n\nThis will delete all messages permanently.\n\nNote: Messages are automatically deleted after ${retentionInfo.messageRetentionDays} days.`;
                   
                   if (window.confirm(confirmMessage)) {
-                    await clearIndividualChat(chatId);
+                    await useChatStore.getState().clearIndividualChat(chatId);
                   }
                 }}
                 className="btn btn-ghost btn-sm text-warning hover:bg-warning/10"
@@ -335,7 +312,7 @@ const ChatContainer = () => {
                   const confirmMessage = `Are you sure you want to clear all group chat history?\n\nThis will delete all messages permanently.\n\nNote: Messages are automatically deleted after ${retentionInfo.messageRetentionDays} days.`;
                   
                   if (window.confirm(confirmMessage)) {
-                    await clearGroupChat(chatId);
+                    await useChatStore.getState().clearGroupChat(chatId);
                   }
                 }}
                 className="btn btn-ghost btn-sm text-warning hover:bg-warning/10"
@@ -358,11 +335,7 @@ const ChatContainer = () => {
           currentMessages.map((msg, index) => renderMessage(msg, index))
         )}
         
-        <TypingIndicator 
-          typingUsers={typingUsers} 
-          contacts={contacts} 
-          isGroup={isGroupChat}
-        />
+
         
         <div ref={messagesEndRef} />
       </div>
@@ -448,7 +421,7 @@ const ChatContainer = () => {
           <input
             type="text"
             value={message}
-            onChange={handleInputChange}
+            onChange={handleMessageChange}
             onKeyPress={handleKeyPress}
             placeholder={`Message ${isGroupChat ? currentChat.name : currentChat.fullName}...`}
             className="input input-bordered flex-1"
@@ -485,4 +458,4 @@ const ChatContainer = () => {
   );
 };
 
-export default ChatContainer;
+export default ChatContainer;        

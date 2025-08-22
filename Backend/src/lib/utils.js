@@ -32,7 +32,7 @@ export const cleanupOldMessages = async () => {
       });
       
       if (deletedCount.deletedCount > 0) {
-        // Messages cleaned up successfully
+        
       }
     }
     
@@ -45,7 +45,7 @@ export const cleanupOldMessages = async () => {
     });
     
     if (deletedIndividualCount.deletedCount > 0) {
-      // Individual messages cleaned up successfully
+      
     }
   } catch (error) {
     console.error('Error during automatic message cleanup:', error);

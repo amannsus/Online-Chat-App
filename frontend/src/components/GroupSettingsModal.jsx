@@ -144,7 +144,7 @@ const GroupSettingsModal = ({ isOpen, onClose, group, onGroupUpdated }) => {
     if (window.confirm(confirmMessage)) {
       setIsClearingChat(true);
       try {
-        await clearGroupChat(group._id);
+        await useChatStore.getState().clearGroupChat(group._id);
       } catch (error) {
         console.error('Error clearing chat:', error);
       } finally {
@@ -412,4 +412,4 @@ const GroupSettingsModal = ({ isOpen, onClose, group, onGroupUpdated }) => {
   );
 };
 
-export default GroupSettingsModal;
+export default GroupSettingsModal;                      

@@ -1,4 +1,4 @@
-// backend/src/models/message.model.js
+
 import mongoose from "mongoose";
 
 const messageSchema = new mongoose.Schema({
@@ -30,7 +30,7 @@ const messageSchema = new mongoose.Schema({
   }
 }, { timestamps: true });
 
-// Ensure either receiverId or groupId is present
+
 messageSchema.pre('save', function(next) {
   if (!this.receiverId && !this.groupId) {
     next(new Error('Either receiverId or groupId must be provided'));

@@ -10,7 +10,6 @@ export const useChatStore = create((set, get) => ({
   selectedContact: null,
   selectedGroup: null,
   onlineUsers: [],
-  typingUsers: [],
   friendRequests: [],
   blockedUsers: [],
   isConnected: false,
@@ -56,17 +55,7 @@ export const useChatStore = create((set, get) => ({
       })),
     })),
 
-  addTypingUser: (userId) =>
-    set((state) => ({
-      typingUsers: state.typingUsers.includes(userId) 
-        ? state.typingUsers 
-        : [...state.typingUsers, userId],
-    })),
 
-  removeTypingUser: (userId) =>
-    set((state) => ({
-      typingUsers: state.typingUsers.filter((id) => id !== userId),
-    })),
 
   searchUsers: async (query) => {
     try {
@@ -101,7 +90,7 @@ export const useChatStore = create((set, get) => ({
 
   acceptFriendRequest: async (requestId) => {
     try {
-      await axiosInstance.post(`/users/friend-request/${requestId}/accept`);
+      await axiosInstance.put(`/users/friend-request/${requestId}/accept`);
       toast.success('Friend request accepted!');
       get().getFriendRequests();
       get().loadContacts();
@@ -114,7 +103,7 @@ export const useChatStore = create((set, get) => ({
 
   rejectFriendRequest: async (requestId) => {
     try {
-      await axiosInstance.post(`/users/friend-request/${requestId}/reject`);
+      await axiosInstance.put(`/users/friend-request/${requestId}/reject`);
       toast.success('Friend request rejected');
       get().getFriendRequests();
     } catch (error) {
@@ -389,57 +378,7 @@ export const useChatStore = create((set, get) => ({
       }
     });
 
-    socket.on('userTyping', (data) => {
-      try {
-        const { userId, contactId } = data || {};
-        if (userId && contactId) {
-          const currentContact = get().selectedContact;
-          const currentGroup = get().selectedGroup;
-          if ((currentContact && currentContact._id === contactId) || 
-              (currentGroup && currentGroup._id === contactId)) {
-            get().addTypingUser(userId);
-          }
-        }
-      } catch (error) {
-        console.error('Error handling userTyping:', error);
-      }
-    });
 
-    socket.on('userStopTyping', (data) => {
-      try {
-        const { userId } = data || {};
-        if (userId) {
-          get().removeTypingUser(userId);
-        }
-      } catch (error) {
-        console.error('Error handling userStopTyping:', error);
-      }
-    });
-
-    socket.on('groupUserTyping', (data) => {
-      try {
-        const { userId, groupId } = data || {};
-        if (userId && groupId) {
-          const currentGroup = get().selectedGroup;
-          if (currentGroup && currentGroup._id === groupId) {
-            get().addTypingUser(userId);
-          }
-        }
-      } catch (error) {
-        console.error('Error handling groupUserTyping:', error);
-      }
-    });
-
-    socket.on('groupUserStopTyping', (data) => {
-      try {
-        const { userId } = data || {};
-        if (userId) {
-          get().removeTypingUser(userId);
-        }
-      } catch (error) {
-        console.error('Error handling groupUserStopTyping:', error);
-      }
-    });
 
     socket.on('memberAdded', (data) => {
       try {
@@ -603,14 +542,11 @@ export const useChatStore = create((set, get) => ({
     }
   },
 
-  clearChat: async (chatId, type = 'individual') => {
+  clearIndividualChat: async (chatId) => {
     try {
-      if (type === 'group') {
-        await axiosInstance.delete(`/groups/${chatId}/messages`);
-      } else {
-        await axiosInstance.delete(`/message/${chatId}`);
-      }
-
+      // Use the correct backend route
+      await axiosInstance.delete(`/message/clear/${chatId}`);
+      
       set((state) => ({
         messages: {
           ...state.messages,
@@ -622,6 +558,26 @@ export const useChatStore = create((set, get) => ({
     } catch (error) {
       console.error('Clear chat error:', error);
       toast.error('Failed to clear chat history');
+      throw error;
+    }
+  },
+  
+  clearGroupChat: async (groupId) => {
+    try {
+      // Use the correct backend route
+      await axiosInstance.delete(`/message/group/${groupId}/clear`);
+      
+      set((state) => ({
+        messages: {
+          ...state.messages,
+          [groupId]: []
+        }
+      }));
+
+      toast.success('Group chat history cleared successfully!');
+    } catch (error) {
+      console.error('Clear group chat error:', error);
+      toast.error('Failed to clear group chat history');
       throw error;
     }
   },
@@ -698,32 +654,28 @@ export const useChatStore = create((set, get) => ({
     }
   },
 
-  sendTyping: (contactId) => {
-    if (get().isConnected) {
-      socket.emit('typing', { contactId });
-    }
-  },
 
-  sendStopTyping: (contactId) => {
-    if (get().isConnected) {
-      socket.emit('stopTyping', { contactId });
-    }
-  },
 
-  sendGroupTyping: (groupId) => {
-    if (get().isConnected) {
-      socket.emit('groupTyping', { groupId });
-    }
-  },
-
-  sendGroupStopTyping: (groupId) => {
-    if (get().isConnected) {
-      socket.emit('groupStopTyping', { groupId });
+  getMessageRetentionInfo: async (chatId, isGroup) => {
+    try {
+      let response;
+      if (isGroup) {
+        response = await axiosInstance.get(`/message/retention/group/${chatId}`);
+      } else {
+        response = await axiosInstance.get(`/message/retention`);
+      }
+      return response.data;
+    } catch (error) {
+      console.error('Get message retention info error:', error);
+      return {
+        messageRetentionDays: 30,
+        autoDeleteMessages: false,
+        type: isGroup ? 'group' : 'individual'
+      };
     }
   }
 }));
 
 export default useChatStore;
-
 
 
