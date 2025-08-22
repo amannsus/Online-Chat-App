@@ -126,6 +126,12 @@ export const useChatStore = create((set, get) => ({
     try {
       const response = await axiosInstance.get('/groups');
       set({ groups: response.data });
+      
+      // Auto-join groups when they're loaded
+      if (get().isConnected && response.data.length > 0) {
+        const groupIds = response.data.map(g => g._id);
+        socket.emit('joinGroups', groupIds);
+      }
     } catch (error) {
       console.error('Error loading groups:', error);
     }
@@ -231,7 +237,16 @@ export const useChatStore = create((set, get) => ({
 
   loadMessages: async (chatId) => {
     try {
-      const response = await axiosInstance.get(`/message/${chatId}`);
+      const state = get();
+      const isGroupChat = state.selectedGroup?._id === chatId;
+      
+      let response;
+      if (isGroupChat) {
+        response = await axiosInstance.get(`/groups/${chatId}/messages`);
+      } else {
+        response = await axiosInstance.get(`/message/${chatId}`);
+      }
+      
       set((state) => ({
         messages: {
           ...state.messages,
@@ -345,6 +360,38 @@ export const useChatStore = create((set, get) => ({
         }
       } catch (error) {
         console.error('Error handling newGroupMessage:', error);
+      }
+    });
+
+    socket.on('groupMessage', (data) => {
+      try {
+        if (!data || !data.groupId || !data.message) {
+          console.error('Invalid group message data received:', data);
+          return;
+        }
+
+        const safeMessage = {
+          _id: data.message._id || `group_${Date.now()}_${Math.random()}`,
+          senderId: data.message.senderId,
+          groupId: data.groupId,
+          text: data.message.text || '',
+          image: data.message.image || null,
+          createdAt: data.message.createdAt || new Date().toISOString(),
+          ...data.message
+        };
+
+        get().addMessage(data.groupId, safeMessage);
+        
+        const currentGroup = get().selectedGroup;
+        if (!currentGroup || currentGroup._id !== data.groupId) {
+          const group = get().groups.find(g => g._id === data.groupId);
+          if (group) {
+            const sender = get().contacts.find(c => c._id === data.message.senderId);
+            toast.success(`New message in ${group.name} from ${sender?.fullName || 'Unknown'}`);
+          }
+        }
+      } catch (error) {
+        console.error('Error handling groupMessage:', error);
       }
     });
 
@@ -564,7 +611,7 @@ export const useChatStore = create((set, get) => ({
   
   clearGroupChat: async (groupId) => {
     try {
-      // Use the correct backend route
+      // Use the correct backend route - groups have their own clear endpoint
       await axiosInstance.delete(`/message/group/${groupId}/clear`);
       
       set((state) => ({
@@ -577,7 +624,8 @@ export const useChatStore = create((set, get) => ({
       toast.success('Group chat history cleared successfully!');
     } catch (error) {
       console.error('Clear group chat error:', error);
-      toast.error('Failed to clear group chat history');
+      const errorMessage = error.response?.data?.error || 'Failed to clear group chat history';
+      toast.error(errorMessage);
       throw error;
     }
   },
@@ -626,13 +674,14 @@ export const useChatStore = create((set, get) => ({
       }));
 
       if (get().isConnected) {
-        socket.emit('leaveGroup', groupId);
+        socket.emit('leaveGroup', { groupId });
       }
       
       toast.success('Left group successfully!');
     } catch (error) {
       console.error('Leave group error:', error);
-      toast.error('Failed to leave group');
+      const errorMessage = error.response?.data?.error || 'Failed to leave group';
+      toast.error(errorMessage);
       throw error;
     }
   },
@@ -642,6 +691,12 @@ export const useChatStore = create((set, get) => ({
       socket.connect();
       socket.on('connect', () => {
         socket.emit('join', userId);
+        // Join all user's groups when connecting
+        const groups = get().groups;
+        if (groups.length > 0) {
+          const groupIds = groups.map(g => g._id);
+          socket.emit('joinGroups', groupIds);
+        }
       });
       get().initSocketListeners();
     }

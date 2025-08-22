@@ -53,7 +53,7 @@ const CreateGroupModal = ({ isOpen, onClose, onGroupCreated }) => {
       const groupData = {
         name: groupName.trim(),
         description: description.trim(),
-        members: selectedContacts,
+        memberIds: selectedContacts,
         messageRetentionDays: parseInt(messageRetentionDays),
         autoDeleteMessages
       };

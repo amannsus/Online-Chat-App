@@ -284,8 +284,8 @@ const ChatContainer = () => {
             </div>
           )}
 
-          {!isGroupChat && (
-            <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2">
+            {!isGroupChat && (
               <button 
                 onClick={async () => {
                   const retentionInfo = await getMessageRetentionInfo(chatId, false);
@@ -301,11 +301,9 @@ const ChatContainer = () => {
                 <Trash2 className="size-4" />
                 Clear Chat
               </button>
-            </div>
-          )}
+            )}
 
-          {isGroupChat && (
-            <div className="flex items-center gap-2">
+            {isGroupChat && (
               <button 
                 onClick={async () => {
                   const retentionInfo = await getMessageRetentionInfo(chatId, true);
@@ -321,8 +319,8 @@ const ChatContainer = () => {
                 <Trash2 className="size-4" />
                 Clear Chat
               </button>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
 

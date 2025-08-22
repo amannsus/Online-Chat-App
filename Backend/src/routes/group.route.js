@@ -211,19 +211,44 @@ router.post('/:id/leave', protectRoute, async (req, res) => {
       return res.status(404).json({ error: 'Group not found' });
     }
 
-    if (group.admin.equals(req.user._id)) {
-      return res.status(400).json({ error: 'Admin cannot leave group. Transfer admin rights first.' });
+    const isAdmin = group.admin.equals(req.user._id);
+    
+    if (isAdmin) {
+      // If admin is leaving, transfer admin rights to the first member
+      const otherMembers = group.members.filter(m => !m.user.equals(req.user._id));
+      
+      if (otherMembers.length === 0) {
+        // If no other members, delete the group
+        await Group.findByIdAndDelete(req.params.id);
+        
+        const io = req.app.get('io');
+        if (io) {
+          io.to(req.params.id).emit('groupDeleted', {
+            groupId: group._id,
+            message: 'Group has been deleted as the last member left'
+          });
+        }
+        
+        return res.json({ message: 'Group deleted successfully as you were the last member' });
+      } else {
+        // Transfer admin rights to the first member
+        const newAdmin = otherMembers[0];
+        group.admin = newAdmin.user;
+        newAdmin.role = 'admin';
+      }
     }
 
+    // Remove the user from members
     group.members = group.members.filter(m => !m.user.equals(req.user._id));
     await group.save();
 
     const io = req.app.get('io');
     if (io) {
       group.members.forEach(member => {
-        io.to(member.user._id).emit('memberLeft', {
+        io.to(member.user._id.toString()).emit('memberLeft', {
           groupId: group._id,
-          leftMember: { _id: req.user._id, fullName: req.user.fullName }
+          leftMember: { _id: req.user._id, fullName: req.user.fullName },
+          newAdmin: isAdmin ? group.admin : null
         });
       });
     }
@@ -276,9 +301,16 @@ router.post('/:id/messages', protectRoute, async (req, res) => {
 
     const io = req.app.get('io');
     if (io) {
+      // Emit to the group room
+      io.to(req.params.id).emit('newGroupMessage', {
+        groupId: group._id,
+        message: populatedMessage
+      });
+      
+      // Also emit to individual members as fallback
       group.members.forEach(member => {
         if (!member.user.equals(req.user._id)) {
-          io.to(member.user._id).emit('groupMessage', {
+          io.to(member.user._id.toString()).emit('groupMessage', {
             groupId: group._id,
             message: populatedMessage
           });

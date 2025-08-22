@@ -161,6 +161,10 @@ const GroupSidebar = () => {
       <CreateGroupModal
         isOpen={showCreateGroup}
         onClose={() => setShowCreateGroup(false)}
+        onGroupCreated={(newGroup) => {
+          setShowCreateGroup(false);
+          loadGroups();
+        }}
       />
     </div>
   );
