@@ -9,5 +9,20 @@
   },
   "dependencies": {
     "socket.io-client": "^4.8.1"
-  }
+  },
+  "description": "A modern, real-time chat application built with **React**, **Node.js**, **Socket.IO**, and **MongoDB**. Yap! lets you chat in real-time, manage friends, create groups, and enjoy a sleek, responsive UI.",
+  "main": "postcss.config.js",
+  "devDependencies": {},
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/amannsus/Online-Chat-App.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/amannsus/Online-Chat-App/issues"
+  },
+  "homepage": "https://github.com/amannsus/Online-Chat-App#readme"
 }
