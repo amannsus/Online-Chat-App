@@ -17,7 +17,7 @@ import handleConnection from "./socket/socketHandler.js";
 
 dotenv.config();
 
-const_dirname = path.resolve();
+const __dirname = path.resolve();
 
 const app = express();
 const server = http.createServer(app);
