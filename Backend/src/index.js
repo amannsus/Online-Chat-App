@@ -1,20 +1,9 @@
-
-console.log('🐛 Environment variables:');
-Object.keys(process.env).forEach(key => {
-  if (process.env[key].includes('${')) {
-    console.error(`❌ Found template literal in ${key}:`, process.env[key]);
-  }
-});
-
-console.log('🐛 Starting imports...');
-
 import express from "express";
 import http from "http";
 import { Server } from "socket.io";
 import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
 import cors from "cors";
-
 import path from "path";
 
 import { connectDB } from "./lib/db.js";
@@ -25,8 +14,6 @@ import userRoutes from "./routes/user.route.js";
 import groupRoutes from "./routes/group.route.js";
 import handleConnection from "./socket/socketHandler.js";
 
-console.log('🐛 All imports completed');
-
 dotenv.config();
 
 const __dirname = path.resolve();
@@ -36,7 +23,9 @@ const server = http.createServer(app);
 
 const io = new Server(server, {
   cors: {
-    origin: process.env.FRONTEND_URL || "http://localhost:5173",
+    origin: process.env.NODE_ENV === "production" 
+      ? true  // Allow same origin in production
+      : "http://localhost:5173",
     methods: ["GET", "POST"],
     credentials: true
   }
@@ -51,26 +40,33 @@ app.use(express.urlencoded({ limit: "10mb", extended: true }));
 app.use(cookieParser());
 
 app.use(cors({
-  origin: process.env.FRONTEND_URL || "http://localhost:5173",
+  origin: process.env.NODE_ENV === "production" 
+    ? true  // Allow same origin in production
+    : "http://localhost:5173",
   credentials: true,
 }));
 
-console.log('🐛 Setting up routes...');
-
+// API Routes - these must come BEFORE static file serving
 app.use("/api/auth", authRoutes);
 app.use("/api/message", messageRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/groups", groupRoutes);
 
-console.log('🐛 Routes setup completed');
-
 handleConnection(io);
 
+// Serve static files from frontend build in production
 if (process.env.NODE_ENV === "production") {
+  // Serve static files from frontend/dist
   app.use(express.static(path.join(__dirname, "../frontend/dist")));
   
+  // Catch-all handler: send back index.html for any non-API routes
   app.get("*", (req, res) => {
-    res.sendFile(path.join(__dirname, "../frontend", "dist", "index.html"));
+    res.sendFile(path.join(__dirname, "../frontend/dist/index.html"));
+  });
+} else {
+  // Development mode - just show API status
+  app.get("/", (req, res) => {
+    res.json({ message: "Chat API is running in development mode!" });
   });
 }
 
@@ -79,6 +75,7 @@ server.listen(PORT, async () => {
     await connectDB();
     scheduleMessageCleanup();
     console.log(`🚀 Server running on port ${PORT}`);
+    console.log(`📱 Frontend served from: ${path.join(__dirname, "../frontend/dist")}`);
   } catch (error) {
     console.error("❌ Server startup failed:", error.message);
     process.exit(1);

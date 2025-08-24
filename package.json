@@ -1,28 +1,12 @@
 {
   "name": "online-chat-app",
   "version": "1.0.0",
+  "description": "",
   "scripts": {
-    "start": "cd backend && npm start",
-    "dev": "cd backend && npm run dev",
-    "install-backend": "cd backend && npm install",
-    "install-frontend": "cd frontend && npm install"
-  },
-  "dependencies": {
-    "socket.io-client": "^4.8.1"
-  },
-  "description": "A modern, real-time chat application built with **React**, **Node.js**, **Socket.IO**, and **MongoDB**. Yap! lets you chat in real-time, manage friends, create groups, and enjoy a sleek, responsive UI.",
-  "main": "postcss.config.js",
-  "devDependencies": {},
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/amannsus/Online-Chat-App.git"
+    "build": "cd backend && npm install",
+    "start": "cd backend && npm start"
   },
   "keywords": [],
   "author": "",
-  "license": "ISC",
-  "type": "commonjs",
-  "bugs": {
-    "url": "https://github.com/amannsus/Online-Chat-App/issues"
-  },
-  "homepage": "https://github.com/amannsus/Online-Chat-App#readme"
+  "license": "ISC"
 }
