@@ -1,3 +1,13 @@
+
+console.log('🐛 Environment variables:');
+Object.keys(process.env).forEach(key => {
+  if (process.env[key].includes('${')) {
+    console.error(`❌ Found template literal in ${key}:`, process.env[key]);
+  }
+});
+
+console.log('🐛 Starting imports...');
+
 import express from "express";
 import http from "http";
 import { Server } from "socket.io";
@@ -15,9 +25,11 @@ import userRoutes from "./routes/user.route.js";
 import groupRoutes from "./routes/group.route.js";
 import handleConnection from "./socket/socketHandler.js";
 
+console.log('🐛 All imports completed');
+
 dotenv.config();
 
-const_dirname = path.resolve();
+const __dirname = path.resolve();
 
 const app = express();
 const server = http.createServer(app);
@@ -43,16 +55,20 @@ app.use(cors({
   credentials: true,
 }));
 
+console.log('🐛 Setting up routes...');
+
 app.use("/api/auth", authRoutes);
 app.use("/api/message", messageRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/groups", groupRoutes);
 
+console.log('🐛 Routes setup completed');
+
 handleConnection(io);
 
 if (process.env.NODE_ENV === "production") {
   app.use(express.static(path.join(__dirname, "../frontend/dist")));
-    
+  
   app.get("*", (req, res) => {
     res.sendFile(path.join(__dirname, "../frontend", "dist", "index.html"));
   });
@@ -68,5 +84,3 @@ server.listen(PORT, async () => {
     process.exit(1);
   }
 });
-
-
