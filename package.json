@@ -1,10 +1,11 @@
 {
   "name": "online-chat-app",
   "version": "1.0.0",
-  "description": "",
+  "description": "A modern, real-time chat application built with React, Node.js, Socket.IO, and MongoDB. Yap! lets you chat in real-time, manage friends, create groups, and enjoy a sleek, responsive UI.",
+  "main": "index.js",
   "scripts": {
-    "build": "cd backend && npm install",
-    "start": "cd backend && npm start"
+    "build": "npm install --prefix backend && npm install --prefix frontend && npm run build --prefix frontend",
+    "start": "npm run start --prefix backend"
   },
   "keywords": [],
   "author": "",
