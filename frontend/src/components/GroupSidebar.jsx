@@ -22,7 +22,10 @@ const GroupSidebar = () => {
     loadGroups();
   }, [loadGroups]);
 
-  const filteredGroups = groups.filter(group =>
+  // Add safety checks for array operations
+  const safeGroups = Array.isArray(groups) ? groups : [];
+  
+  const filteredGroups = safeGroups.filter(group =>
     group.name?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -49,7 +52,7 @@ const GroupSidebar = () => {
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold flex items-center gap-2">
             <Users className="size-5" />
-            Groups ({groups.length})
+            Groups ({safeGroups.length})
           </h2>
           
           <button
@@ -76,7 +79,7 @@ const GroupSidebar = () => {
       <div className="flex-1 overflow-y-auto">
         {filteredGroups.length === 0 ? (
           <div className="p-4 text-center text-base-content/50">
-            {groups.length === 0 ? (
+            {safeGroups.length === 0 ? (
               <div>
                 <p>No groups yet</p>
                 <button
