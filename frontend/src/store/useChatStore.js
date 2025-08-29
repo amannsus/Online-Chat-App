@@ -15,8 +15,8 @@ export const useChatStore = create((set, get) => ({
   isConnected: false,
   socketInitialized: false,
 
-  setContacts: (contacts) => set({ contacts }),
-  setGroups: (groups) => set({ groups }),
+  setContacts: (contacts) => set({ contacts: Array.isArray(contacts) ? contacts : [] }),
+  setGroups: (groups) => set({ groups: Array.isArray(groups) ? groups : [] }),
   setSelectedContact: (contact) => {
     set({ selectedContact: contact, selectedGroup: null });
   },
@@ -47,24 +47,22 @@ export const useChatStore = create((set, get) => ({
 
   setOnlineUsers: (userIds) =>
     set((state) => ({
-      onlineUsers: userIds,
-      contacts: state.contacts.map((contact) => ({
+      onlineUsers: Array.isArray(userIds) ? userIds : [],
+      contacts: (state.contacts || []).map((contact) => ({
         ...contact,
-        online: userIds.includes(contact._id),
-        status: userIds.includes(contact._id) ? 'Online' : 'Offline',
+        online: Array.isArray(userIds) ? userIds.includes(contact._id) : false,
+        status: Array.isArray(userIds) && userIds.includes(contact._id) ? 'Online' : 'Offline',
       })),
     })),
-
-
 
   searchUsers: async (query) => {
     try {
       const response = await axiosInstance.get(`/users/search?q=${query}`);
-      return response.data;
+      return Array.isArray(response.data) ? response.data : [];
     } catch (error) {
       console.error('Search users error:', error);
       toast.error('Failed to search users');
-      throw error;
+      return []; // Return empty array instead of throwing
     }
   },
 
@@ -82,9 +80,10 @@ export const useChatStore = create((set, get) => ({
   getFriendRequests: async () => {
     try {
       const response = await axiosInstance.get('/users/friend-requests');
-      set({ friendRequests: response.data });
+      set({ friendRequests: Array.isArray(response.data) ? response.data : [] });
     } catch (error) {
       console.error('Error fetching friend requests:', error);
+      set({ friendRequests: [] }); // Ensure it's always an array
     }
   },
 
@@ -116,24 +115,27 @@ export const useChatStore = create((set, get) => ({
   loadContacts: async () => {
     try {
       const response = await axiosInstance.get('/users/contacts');
-      set({ contacts: response.data });
+      set({ contacts: Array.isArray(response.data) ? response.data : [] });
     } catch (error) {
       console.error('Error loading contacts:', error);
+      set({ contacts: [] }); // Ensure it's always an array
     }
   },
 
   loadGroups: async () => {
     try {
       const response = await axiosInstance.get('/groups');
-      set({ groups: response.data });
+      const groupsData = Array.isArray(response.data) ? response.data : [];
+      set({ groups: groupsData });
       
       // Auto-join groups when they're loaded
-      if (get().isConnected && response.data.length > 0) {
-        const groupIds = response.data.map(g => g._id);
+      if (get().isConnected && groupsData.length > 0) {
+        const groupIds = groupsData.map(g => g._id);
         socket.emit('joinGroups', groupIds);
       }
     } catch (error) {
       console.error('Error loading groups:', error);
+      set({ groups: [] }); // Ensure it's always an array
     }
   },
 
@@ -143,7 +145,7 @@ export const useChatStore = create((set, get) => ({
       const newGroup = response.data;
       
       set((state) => ({
-        groups: [...state.groups, newGroup]
+        groups: [...(state.groups || []), newGroup]
       }));
       
       toast.success('Group created successfully!');
@@ -161,7 +163,7 @@ export const useChatStore = create((set, get) => ({
       const updatedGroup = response.data;
       
       set((state) => ({
-        groups: state.groups.map(g => 
+        groups: (state.groups || []).map(g => 
           g._id === groupId ? updatedGroup : g
         ),
         selectedGroup: state.selectedGroup?._id === groupId ? updatedGroup : state.selectedGroup
@@ -181,7 +183,7 @@ export const useChatStore = create((set, get) => ({
       await axiosInstance.delete(`/groups/${groupId}`);
       
       set((state) => ({
-        groups: state.groups.filter(g => g._id !== groupId),
+        groups: (state.groups || []).filter(g => g._id !== groupId),
         selectedGroup: state.selectedGroup?._id === groupId ? null : state.selectedGroup
       }));
       
@@ -199,7 +201,7 @@ export const useChatStore = create((set, get) => ({
       const updatedGroup = response.data;
       
       set((state) => ({
-        groups: state.groups.map(g => 
+        groups: (state.groups || []).map(g => 
           g._id === groupId ? updatedGroup : g
         ),
         selectedGroup: state.selectedGroup?._id === groupId ? updatedGroup : state.selectedGroup
@@ -220,7 +222,7 @@ export const useChatStore = create((set, get) => ({
       const updatedGroup = response.data;
       
       set((state) => ({
-        groups: state.groups.map(g => 
+        groups: (state.groups || []).map(g => 
           g._id === groupId ? updatedGroup : g
         ),
         selectedGroup: state.selectedGroup?._id === groupId ? updatedGroup : state.selectedGroup
@@ -250,11 +252,17 @@ export const useChatStore = create((set, get) => ({
       set((state) => ({
         messages: {
           ...state.messages,
-          [chatId]: response.data
+          [chatId]: Array.isArray(response.data) ? response.data : []
         }
       }));
     } catch (error) {
       console.error('Error loading messages:', error);
+      set((state) => ({
+        messages: {
+          ...state.messages,
+          [chatId]: []
+        }
+      }));
     }
   },
 
@@ -321,7 +329,7 @@ export const useChatStore = create((set, get) => ({
         const currentGroup = get().selectedGroup;
         if ((!currentContact || currentContact._id !== data.senderId) && 
             (!currentGroup || currentGroup._id !== data.senderId)) {
-          const contact = get().contacts.find(c => c._id === data.senderId);
+          const contact = (get().contacts || []).find(c => c._id === data.senderId);
           if (contact) {
             toast.success(`New message from ${contact.fullName}`);
           }
@@ -352,9 +360,9 @@ export const useChatStore = create((set, get) => ({
         
         const currentGroup = get().selectedGroup;
         if (!currentGroup || currentGroup._id !== data.groupId) {
-          const group = get().groups.find(g => g._id === data.groupId);
+          const group = (get().groups || []).find(g => g._id === data.groupId);
           if (group) {
-            const sender = get().contacts.find(c => c._id === data.message.senderId);
+            const sender = (get().contacts || []).find(c => c._id === data.message.senderId);
             toast.success(`New message in ${group.name} from ${sender?.fullName || 'Unknown'}`);
           }
         }
@@ -384,9 +392,9 @@ export const useChatStore = create((set, get) => ({
         
         const currentGroup = get().selectedGroup;
         if (!currentGroup || currentGroup._id !== data.groupId) {
-          const group = get().groups.find(g => g._id === data.groupId);
+          const group = (get().groups || []).find(g => g._id === data.groupId);
           if (group) {
-            const sender = get().contacts.find(c => c._id === data.message.senderId);
+            const sender = (get().contacts || []).find(c => c._id === data.message.senderId);
             toast.success(`New message in ${group.name} from ${sender?.fullName || 'Unknown'}`);
           }
         }
@@ -424,8 +432,6 @@ export const useChatStore = create((set, get) => ({
         console.error('Error handling onlineUsers:', error);
       }
     });
-
-
 
     socket.on('memberAdded', (data) => {
       try {
@@ -634,7 +640,7 @@ export const useChatStore = create((set, get) => ({
     try {
       await axiosInstance.post(`/users/${userId}/block`);
       set((state) => ({
-        blockedUsers: [...state.blockedUsers, userId]
+        blockedUsers: [...(state.blockedUsers || []), userId]
       }));
       toast.success('User blocked successfully!');
     } catch (error) {
@@ -648,7 +654,7 @@ export const useChatStore = create((set, get) => ({
     try {
       await axiosInstance.post(`/users/${userId}/unblock`);
       set((state) => ({
-        blockedUsers: state.blockedUsers.filter(id => id !== userId)
+        blockedUsers: (state.blockedUsers || []).filter(id => id !== userId)
       }));
       toast.success('User unblocked successfully!');
     } catch (error) {
@@ -669,7 +675,7 @@ export const useChatStore = create((set, get) => ({
       await axiosInstance.post(`/groups/${groupId}/leave`);
       
       set((state) => ({
-        groups: state.groups.filter(g => g._id !== groupId),
+        groups: (state.groups || []).filter(g => g._id !== groupId),
         selectedGroup: state.selectedGroup?._id === groupId ? null : state.selectedGroup
       }));
 
@@ -692,7 +698,7 @@ export const useChatStore = create((set, get) => ({
       socket.on('connect', () => {
         socket.emit('join', userId);
         // Join all user's groups when connecting
-        const groups = get().groups;
+        const groups = get().groups || [];
         if (groups.length > 0) {
           const groupIds = groups.map(g => g._id);
           socket.emit('joinGroups', groupIds);
@@ -708,8 +714,6 @@ export const useChatStore = create((set, get) => ({
       set({ isConnected: false, socketInitialized: false });
     }
   },
-
-
 
   getMessageRetentionInfo: async (chatId, isGroup) => {
     try {
@@ -732,5 +736,3 @@ export const useChatStore = create((set, get) => ({
 }));
 
 export default useChatStore;
-
-
