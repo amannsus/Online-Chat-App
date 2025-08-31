@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuthStore } from "../store/useAuthStore";
@@ -7,6 +8,7 @@ import GroupSidebar from '../components/GroupSidebar';
 import ChatContainer from '../components/ChatContainer';
 import ErrorBoundary from '../components/ErrorBoundary';
 import { Settings, User, LogOut, MessageSquare, Users, Home } from "lucide-react";
+import ChatAvatarButton from "../components/ChatAvatarButton"; // NEW
 
 const ChatPage = () => {
   const { authUser, logout } = useAuthStore();
@@ -33,11 +35,9 @@ const ChatPage = () => {
     <div className="h-screen bg-base-200 flex flex-col">
       <div className="flex items-center justify-between w-full p-4 border-b border-base-300">
         <div className="flex items-center gap-3">
-          <div className="size-10 rounded-full bg-primary/10 flex items-center justify-center">
-            <span className="text-primary font-semibold">
-              {authUser.fullName?.charAt(0) || 'U'}
-            </span>
-          </div>
+          {/* Avatar + uploader (replaces initial letter circle) */}
+          <ChatAvatarButton size={40} />
+
           <h1 className="text-lg font-semibold">Yap!🤗</h1>
           <div className={`ml-2 text-xs ${isConnected ? 'text-success' : 'text-error'}`}>
             {isConnected ? 'Connected' : 'Disconnected'}
