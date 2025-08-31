@@ -1,1 +1,72 @@
+import React, { useRef, useState } from "react";
+import { Camera } from "lucide-react";
+import { useAuthStore } from "../store/useAuthStore";
+
+const ChatAvatarButton = ({ size = 40, className = "" }) => {
+  const { authUser, updateProfile, isUpdatingProfile } = useAuthStore();
+  const inputRef = useRef(null);
+  const [preview, setPreview] = useState(null);
+
+  const openPicker = () => inputRef.current?.click();
+
+  const onFileChange = (e) => {
+    const file = e.target.files?.;
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.addEventListener(
+      "load",
+      async () => {
+        const dataUrl = reader.result; // data:image/*;base64,...
+        setPreview(dataUrl);
+        try {
+          await updateProfile({ profilePic: dataUrl });
+        } finally {
+          // no-op
+        }
+      },
+      false
+    );
+    reader.readAsDataURL(file);
+  };
+
+  const src = preview || authUser?.profilePic || "/avatar.png";
+
+  return (
+    <div className={`relative inline-block ${className}`} style={{ width: size, height: size }}>
+      <button
+        type="button"
+        onClick={openPicker}
+        className="group w-full h-full rounded-full overflow-hidden ring-2 ring-base-300 hover:ring-primary focus:outline-none focus:ring-2 focus:ring-primary"
+        aria-label="Change avatar"
+        disabled={isUpdatingProfile}
+      >
+        <img
+          src={src}
+          alt="User avatar"
+          className="w-full h-full object-cover"
+          draggable={false}
+        />
+
+        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity grid place-items-center">
+          {isUpdatingProfile ? (
+            <span className="loading loading-spinner loading-sm text-white" />
+          ) : (
+            <Camera className="w-4 h-4 text-white" />
+          )}
+        </div>
+      </button>
+
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*"
+        onChange={onFileChange}
+        className="hidden"
+      />
+    </div>
+  );
+};
+
+export default ChatAvatarButton;
 
