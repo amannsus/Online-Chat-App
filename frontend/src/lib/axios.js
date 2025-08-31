@@ -1,27 +1,28 @@
+
 import axios from "axios";
 
+// Build a base URL that keeps cookies first-party
 const getBaseURL = () => {
-  if (import.meta.env.MODE === "development") {
+  // Local development talks directly to the backend
+  if (import.meta.env.MODE === "development" || import.meta.env.DEV) {
     return "http://localhost:5001/api";
   }
-  
-  
-  const backendUrl = import.meta.env.VITE_BACKEND_URL;
-  if (backendUrl) {
-    return `${backendUrl}/api`;
-  }
-  
-  
+
+  // In production, use same-origin so Netlify proxies /api to Render
+  // (configured in netlify.toml and public/_redirects)
   return "/api";
 };
 
 export const axiosInstance = axios.create({
   baseURL: getBaseURL(),
-  withCredentials: true,
-  timeout: 10000,
+  withCredentials: true,          // send/receive the jwt cookie
+  timeout: 15000,
+  headers: {
+    "Content-Type": "application/json",
+  },
 });
 
-
+// Centralized 401 handling without loops
 axiosInstance.interceptors.response.use(
   (response) => response,
   (error) => {
@@ -30,19 +31,20 @@ axiosInstance.interceptors.response.use(
     const url = error.config?.url || "";
 
     if (status === 401) {
-      // Ignore the initial auth check 401 to avoid login page reload loops
-      const isAuthCheck = url.includes('/auth/check');
+      // Ignore the initial auth check to avoid flicker/loops
+      const isAuthCheck = url.includes("/auth/check");
+      const onAuthPages = path.startsWith("/login") || path.startsWith("/signup");
 
-      const onAuthPages = path.startsWith('/login') || path.startsWith('/signup');
       if (!onAuthPages && !isAuthCheck) {
         if (window.navigateToLogin) {
-          window.navigateToLogin(); // spa navigation if provided
+          window.navigateToLogin();
         } else {
-          window.location.replace('/login'); // avoid full reload loop
+          window.location.replace("/login");
         }
       }
-      // If already on auth pages or it’s /auth/check, let the app render normally
     }
     return Promise.reject(error);
   }
 );
+
+export default axiosInstance;
