@@ -33,6 +33,7 @@ const ChatContainer = () => {
   const emojiPickerRef = useRef(null);
   const attachMenuRef = useRef(null);
 
+
   const currentChat = selectedContact || selectedGroup;
   const isGroupChat = !!selectedGroup;
   const chatId = currentChat?._id;
@@ -61,6 +62,8 @@ const ChatContainer = () => {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+
 
   const handleSend = async () => {
     if ((!message.trim() && !selectedFile) || !chatId) return;
@@ -99,7 +102,7 @@ const ChatContainer = () => {
   };
 
   const handleFileSelect = (e, type) => {
-    const file = e.target.files;
+    const file = e.target.files[0];
     if (file) {
       setSelectedFile(file);
       
@@ -207,7 +210,7 @@ const ChatContainer = () => {
 
   if (!currentChat) {
     return (
-      <div className="flex-1 min-w-0 min-h-0 flex items-center justify-center bg-base-100">
+      <div className="flex-1 flex items-center justify-center bg-base-100">
         <div className="text-center">
           <div className="text-6xl mb-4">💬</div>
           <h3 className="text-xl font-semibold text-base-content/70 mb-2">
@@ -222,7 +225,7 @@ const ChatContainer = () => {
   }
 
   return (
-    <div className="flex-1 min-w-0 min-h-0 flex flex-col bg-base-100">
+    <div className="flex-1 flex flex-col bg-base-100">
       <div className="p-4 border-b border-base-300 bg-base-200">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -321,7 +324,7 @@ const ChatContainer = () => {
         </div>
       </div>
 
-      <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {currentMessages.length === 0 ? (
           <div className="text-center text-base-content/50 mt-20">
             <p>No messages yet. Start the conversation!</p>
@@ -329,6 +332,8 @@ const ChatContainer = () => {
         ) : (
           currentMessages.map((msg, index) => renderMessage(msg, index))
         )}
+        
+
         
         <div ref={messagesEndRef} />
       </div>
@@ -357,9 +362,9 @@ const ChatContainer = () => {
         </div>
       )}
 
-      <div className="p-4 border-t border-base-300 pb-[env(safe-area-inset-bottom)]">
+      <div className="p-4 border-t border-base-300">
         {showEmojiPicker && (
-          <div className="absolute bottom-20 left-4 z-10" ref={emojiPickerRef}>
+          <div className="absolute bottom-20 left-4 z-10">
             <EmojiPicker onEmojiClick={onEmojiClick} />
           </div>
         )}
@@ -417,7 +422,7 @@ const ChatContainer = () => {
             onChange={handleMessageChange}
             onKeyPress={handleKeyPress}
             placeholder={`Message ${isGroupChat ? currentChat.name : currentChat.fullName}...`}
-            className="input input-bordered flex-1 min-w-0"
+            className="input input-bordered flex-1"
           />
 
           <button
@@ -443,10 +448,12 @@ const ChatContainer = () => {
         isOpen={showGroupSettings} 
         onClose={() => setShowGroupSettings(false)} 
         group={currentChat} 
-        onGroupUpdated={(updatedGroup) => {}}
+        onGroupUpdated={(updatedGroup) => {
+          
+        }}
       />
     </div>
   );
 };
 
-export default ChatContainer;
+export default ChatContainer;        
