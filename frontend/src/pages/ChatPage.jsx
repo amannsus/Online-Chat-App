@@ -15,9 +15,7 @@ const ChatPage = () => {
   const [mobilePanelOpen, setMobilePanelOpen] = useState(false);
 
   useEffect(() => {
-    if (authUser) {
-      connectSocket(authUser._id);
-    }
+    if (authUser) connectSocket(authUser._id);
   }, [authUser, connectSocket]);
 
   if (!authUser) {
@@ -35,7 +33,7 @@ const ChatPage = () => {
       {/* Top bar */}
       <div className="flex items-center justify-between w-full p-4 border-b border-base-300 bg-base-100">
         <div className="flex items-center gap-3">
-          {/* Mobile: open drawer */}
+          {/* Mobile drawer toggle */}
           <button
             className="btn btn-ghost btn-sm md:hidden"
             onClick={() => setMobilePanelOpen(true)}
@@ -75,7 +73,7 @@ const ChatPage = () => {
         </div>
       </div>
 
-      {/* Content area with dvh height (fallback to vh) */}
+      {/* Content area with dvh height and vh fallback */}
       <div
         className="flex grow min-h-0"
         style={{
@@ -89,7 +87,7 @@ const ChatPage = () => {
             <div className="flex bg-base-300">
               <button
                 onClick={() => setActiveTab('contacts')}
-                className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium ${
+                className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium transition-colors duration-200 ${
                   activeTab === 'contacts'
                     ? 'bg-base-100 text-primary border-b-2 border-primary'
                     : 'text-base-content/70 hover:text-base-content'
@@ -100,7 +98,7 @@ const ChatPage = () => {
               </button>
               <button
                 onClick={() => setActiveTab('groups')}
-                className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium ${
+                className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium transition-colors duration-200 ${
                   activeTab === 'groups'
                     ? 'bg-base-100 text-primary border-b-2 border-primary'
                     : 'text-base-content/70 hover:text-base-content'
@@ -125,55 +123,62 @@ const ChatPage = () => {
         </ErrorBoundary>
       </div>
 
-      {/* Mobile drawer/overlay for side panel */}
-      {mobilePanelOpen && (
-        <div className="fixed inset-0 z-50 md:hidden">
-          <div
-            className="absolute inset-0 bg-black/50"
-            onClick={() => setMobilePanelOpen(false)}
-          />
-          <div className="absolute inset-y-0 left-0 w-[85%] max-w-[360px] bg-base-200 border-r border-base-300 shadow-xl flex flex-col">
-            <div className="flex items-center justify-between p-3 border-b border-base-300 bg-base-100">
-              <div className="flex items-center gap-2">
-                <MessageSquare className="w-4 h-4" />
-                <span className="font-semibold text-sm">Chats</span>
-              </div>
-              <button className="btn btn-ghost btn-xs" onClick={() => setMobilePanelOpen(false)} aria-label="Close">
-                <X className="w-4 h-4" />
-              </button>
+      {/* Mobile drawer/overlay for Contacts/Groups */}
+      <div
+        className={`fixed inset-0 z-50 md:hidden pointer-events-none ${mobilePanelOpen ? 'opacity-100' : 'opacity-0'} transition-opacity duration-200 ease-out`}
+        aria-hidden={!mobilePanelOpen}
+      >
+        {/* Backdrop */}
+        <div
+          className={`absolute inset-0 bg-black/50 transition-opacity duration-200 ease-out ${mobilePanelOpen ? 'opacity-100' : 'opacity-0'} pointer-events-auto`}
+          onClick={() => setMobilePanelOpen(false)}
+        />
+        {/* Panel */}
+        <div
+          className={`absolute inset-y-0 left-0 w-[86%] max-w-[360px] bg-base-200 border-r border-base-300 shadow-xl flex flex-col transform transition-transform duration-300 ease-out pointer-events-auto ${mobilePanelOpen ? 'translate-x-0' : '-translate-x-full'}`}
+          role="dialog"
+          aria-modal="true"
+        >
+          <div className="flex items-center justify-between p-3 border-b border-base-300 bg-base-100">
+            <div className="flex items-center gap-2">
+              <MessageSquare className="w-4 h-4" />
+              <span className="font-semibold text-sm">Chats</span>
             </div>
+            <button className="btn btn-ghost btn-xs" onClick={() => setMobilePanelOpen(false)} aria-label="Close">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
 
-            <div className="flex bg-base-300">
-              <button
-                onClick={() => setActiveTab('contacts')}
-                className={`flex-1 px-3 py-2 text-sm ${
-                  activeTab === 'contacts'
-                    ? 'bg-base-100 text-primary border-b-2 border-primary'
-                    : 'text-base-content/70'
-                }`}
-              >
-                Contacts
-              </button>
-              <button
-                onClick={() => setActiveTab('groups')}
-                className={`flex-1 px-3 py-2 text-sm ${
-                  activeTab === 'groups'
-                    ? 'bg-base-100 text-primary border-b-2 border-primary'
-                    : 'text-base-content/70'
-                }`}
-              >
-                Groups
-              </button>
-            </div>
+          <div className="flex bg-base-300">
+            <button
+              onClick={() => setActiveTab('contacts')}
+              className={`flex-1 px-3 py-2 text-sm transition-colors duration-200 ${
+                activeTab === 'contacts'
+                  ? 'bg-base-100 text-primary border-b-2 border-primary'
+                  : 'text-base-content/70 hover:text-base-content'
+              }`}
+            >
+              Contacts
+            </button>
+            <button
+              onClick={() => setActiveTab('groups')}
+              className={`flex-1 px-3 py-2 text-sm transition-colors duration-200 ${
+                activeTab === 'groups'
+                  ? 'bg-base-100 text-primary border-b-2 border-primary'
+                  : 'text-base-content/70 hover:text-base-content'
+              }`}
+            >
+              Groups
+            </button>
+          </div>
 
-            <div className="flex-1 min-h-0 overflow-y-auto">
-              <ErrorBoundary>
-                {activeTab === 'contacts' ? <Sidebar /> : <GroupSidebar />}
-              </ErrorBoundary>
-            </div>
+          <div className="flex-1 min-h-0 overflow-y-auto">
+            <ErrorBoundary>
+              {activeTab === 'contacts' ? <Sidebar /> : <GroupSidebar />}
+            </ErrorBoundary>
           </div>
         </div>
-      )}
+      </div>
     </div>
   );
 };
