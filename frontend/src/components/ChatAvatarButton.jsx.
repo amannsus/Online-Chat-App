@@ -1,0 +1,59 @@
+
+import React, { useRef, useState } from 'react';
+import { Camera } from 'lucide-react';
+import { useAuthStore } from '../store/useAuthStore';
+
+export default function ChatAvatarButton({ size = 40 }) {
+  const fileRef = useRef(null);
+  const { authUser, updateProfile, isUpdatingProfile } = useAuthStore();
+  const [preview, setPreview] = useState(null);
+
+  const onPick = () => fileRef.current?.click();
+
+  const onChange = (e) => {
+    const file = e.target.files?.;
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onloadend = async () => {
+      const dataUrl = reader.result; // Base64 data URL for Cloudinary upload
+      setPreview(dataUrl);
+      try {
+        await updateProfile({ profilePic: dataUrl });
+      } finally {
+        setPreview(null);
+        e.target.value = '';
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const src = preview || authUser?.profilePic || '/avatar.png';
+
+  return (
+    <div className="relative">
+      <img
+        src={src}
+        alt="Profile"
+        className="rounded-full object-cover ring-2 ring-base-300"
+        style={{ width: size, height: size }}
+      />
+      <button
+        type="button"
+        onClick={onPick}
+        className="absolute -bottom-1 -right-1 btn btn-circle btn-xs btn-primary"
+        title={isUpdatingProfile ? 'Uploading...' : 'Change photo'}
+        disabled={isUpdatingProfile}
+      >
+        <Camera className="w-3 h-3" />
+      </button>
+      <input
+        ref={fileRef}
+        type="file"
+        accept="image/*"
+        onChange={onChange}
+        className="hidden"
+      />
+    </div>
+  );
+}
