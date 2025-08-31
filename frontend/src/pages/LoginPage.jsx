@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useAuthStore } from "../store/useAuthStore";
-import { MessageSquare, Mail, Lock, Eye, EyeOff, Loader2, Settings } from "lucide-react";
+import { MessageSquare, Mail, Lock, Eye, EyeOff, Loader2 } from "lucide-react";
 import { Link, Navigate } from "react-router-dom";
 import toast from "react-hot-toast";
 
@@ -12,7 +12,6 @@ const LoginPage = () => {
   });
 
   const { login, isLoggingIn, authUser } = useAuthStore();
-
 
   if (authUser) {
     return <Navigate to="/home" replace />;
@@ -36,15 +35,6 @@ const LoginPage = () => {
     <div className="min-h-screen grid lg:grid-cols-2 bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
       {/* Left side - Form */}
       <div className="flex flex-col justify-center items-center p-6 sm:p-12 relative overflow-hidden">
-        {/* Settings Button - Top Right */}
-        <Link 
-          to="/settings" 
-          className="absolute top-6 right-6 flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-sm hover:bg-white/20 text-white rounded-lg transition-colors border border-white/20"
-        >
-          <Settings className="size-4" />
-          Settings
-        </Link>
-
         <div className="w-full max-w-md space-y-8 relative z-10">
           {/* Logo section */}
           <div className="text-center mb-8">
