@@ -22,9 +22,7 @@ const GroupSidebar = () => {
     loadGroups();
   }, [loadGroups]);
 
-  // Add safety checks for array operations
   const safeGroups = Array.isArray(groups) ? groups : [];
-  
   const filteredGroups = safeGroups.filter(group =>
     group.name?.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -44,6 +42,11 @@ const GroupSidebar = () => {
 
   const isGroupAdmin = (group) => {
     return group.admin === authUser._id || group.admin?._id === authUser._id;
+  };
+
+  const closeDrawerIfOpen = () => {
+    const el = document.getElementById('chat-drawer');
+    if (el && el.checked) el.checked = false;
   };
 
   return (
@@ -103,7 +106,7 @@ const GroupSidebar = () => {
             >
               <div 
                 className="flex items-center gap-3 cursor-pointer"
-                onClick={() => setSelectedGroup(group)}
+                onClick={() => { setSelectedGroup(group); closeDrawerIfOpen(); }}
               >
                 <div className="size-12 rounded-full bg-primary/10 flex items-center justify-center">
                   {group.avatar ? (
@@ -164,7 +167,7 @@ const GroupSidebar = () => {
       <CreateGroupModal
         isOpen={showCreateGroup}
         onClose={() => setShowCreateGroup(false)}
-        onGroupCreated={(newGroup) => {
+        onGroupCreated={() => {
           setShowCreateGroup(false);
           loadGroups();
         }}
