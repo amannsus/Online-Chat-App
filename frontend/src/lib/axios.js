@@ -1,51 +1,47 @@
-
+// frontend/src/lib/axios.js
 import axios from "axios";
 
-/**
- * Use localhost in development.
- * In production, always use same-origin "/api" so the JWT cookie is first-party
- * when the site is served from Netlify (which proxies /api/* to Render).
- */
+const isDev = import.meta.env.MODE === "development";
+
 const getBaseURL = () => {
-  if (import.meta.env.MODE === "development") {
-    return "http://localhost:5001/api";
-  }
+  // In development, hit the local API directly
+  if (isDev) return "http://localhost:5001/api";
+
+  // In production, always use same-origin so auth cookies are first‑party
+  // and flow through Netlify’s proxy rule (/api/* -> backend)
   return "/api";
 };
 
 export const axiosInstance = axios.create({
   baseURL: getBaseURL(),
-  withCredentials: true,           // send/receive cookies
-  timeout: 10000,
+  withCredentials: true,             // send/receive cookies with requests
+  timeout: isDev ? 15000 : 30000,    // give Render Free time to wake up
   headers: {
-    Accept: "application/json",
-    "Content-Type": "application/json",
     "X-Requested-With": "XMLHttpRequest",
   },
 });
 
-// Optional: request interceptor (kept minimal)
-axiosInstance.interceptors.request.use(
-  (config) => config,
-  (error) => Promise.reject(error)
-);
+// Optional warmup helper (use before first auth call if desired)
+export const warmupApi = async () => {
+  try {
+    await axiosInstance.get("/health", { timeout: 5000 });
+  } catch {
+    // ignore warmup errors
+  }
+};
 
-/**
- * Response interceptor:
- * - Allow /auth/check to 401 silently so the app can render auth pages without loops.
- * - For other 401s, navigate to /login (SPA if window.navigateToLogin exists).
- */
+// Centralized 401 handling to redirect to login only when appropriate
 axiosInstance.interceptors.response.use(
   (response) => response,
   (error) => {
     const status = error.response?.status;
-    const path = window.location.pathname;
-    const reqUrl = error.config?.url || "";
+    const path = typeof window !== "undefined" ? window.location.pathname : "";
+    const url = error.config?.url || "";
 
     if (status === 401) {
-      const isAuthCheck = reqUrl.includes("/auth/check");
-      const onAuthPages =
-        path.startsWith("/login") || path.startsWith("/signup");
+      // Avoid loops on the initial /auth/check or when already on auth pages
+      const isAuthCheck = url.includes("/auth/check");
+      const onAuthPages = path.startsWith("/login") || path.startsWith("/signup");
 
       if (!onAuthPages && !isAuthCheck) {
         if (window.navigateToLogin) {
@@ -54,7 +50,6 @@ axiosInstance.interceptors.response.use(
           window.location.replace("/login");
         }
       }
-      // For /auth/check or when already on auth pages, just reject to let UI handle it
     }
 
     return Promise.reject(error);
