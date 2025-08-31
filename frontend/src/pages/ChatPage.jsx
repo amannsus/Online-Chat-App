@@ -87,13 +87,16 @@ const ChatPage = () => {
         !e.target.closest('.sidebar-container') && 
         !e.target.closest('.sidebar-toggle') &&
         window.innerWidth < 768) {
+      console.log('Closing sidebar from outside click');
       setIsSidebarOpen(false);
     }
   }, [isSidebarOpen]);
 
   useEffect(() => {
-    document.addEventListener('touchstart', handleOutsideClick);
-    document.addEventListener('click', handleOutsideClick);
+    if (window.innerWidth < 768) {
+      document.addEventListener('touchstart', handleOutsideClick);
+      document.addEventListener('click', handleOutsideClick);
+    }
     return () => {
       document.removeEventListener('touchstart', handleOutsideClick);
       document.removeEventListener('click', handleOutsideClick);
@@ -294,7 +297,7 @@ const ChatPage = () => {
         {/* Sidebar with enhanced mobile optimization */}
         <aside className={`
           sidebar-container
-          fixed md:relative
+          fixed md:static
           top-0 md:top-0
           left-0
           w-72 sm:w-80 md:w-80
@@ -306,28 +309,35 @@ const ChatPage = () => {
           ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
         `}
         style={{ 
-          height: isSidebarOpen ? viewportHeight : 'auto',
+          height: '100vh',
           paddingTop: window.innerWidth < 768 ? '56px' : '0'
         }}>
+          {console.log('Sidebar render - isOpen:', isSidebarOpen)}
           {/* Tab Navigation with improved mobile design */}
           <div className="flex bg-base-300 sticky top-0 z-10 shadow-sm">
             <button
-              onClick={() => setActiveTab('contacts')}
+              onClick={() => {
+                console.log('Contacts tab clicked');
+                setActiveTab('contacts');
+              }}
               className={`flex-1 flex items-center justify-center gap-2 px-3 py-3 text-sm font-medium transition-all duration-200 ${
                 activeTab === 'contacts'
-                  ? 'bg-base-100 text-primary border-b-2 border-primary shadow-sm transform scale-105'
-                  : 'text-base-content/70 hover:text-base-content hover:bg-base-100/50 active:scale-95'
+                  ? 'bg-base-100 text-primary border-b-2 border-primary shadow-sm'
+                  : 'text-base-content/70 hover:text-base-content hover:bg-base-100/50'
               }`}
             >
               <MessageSquare className="size-4" />
               <span>Contacts</span>
             </button>
             <button
-              onClick={() => setActiveTab('groups')}
+              onClick={() => {
+                console.log('Groups tab clicked');
+                setActiveTab('groups');
+              }}
               className={`flex-1 flex items-center justify-center gap-2 px-3 py-3 text-sm font-medium transition-all duration-200 ${
                 activeTab === 'groups'
-                  ? 'bg-base-100 text-primary border-b-2 border-primary shadow-sm transform scale-105'
-                  : 'text-base-content/70 hover:text-base-content hover:bg-base-100/50 active:scale-95'
+                  ? 'bg-base-100 text-primary border-b-2 border-primary shadow-sm'
+                  : 'text-base-content/70 hover:text-base-content hover:bg-base-100/50'
               }`}
             >
               <Users className="size-4" />
@@ -336,47 +346,44 @@ const ChatPage = () => {
           </div>
 
           {/* Sidebar Content with smooth transitions */}
-          <div className="overflow-hidden" style={{ 
-            height: `calc(${viewportHeight} - ${window.innerWidth < 768 ? '112px' : '41px'})` 
-          }}>
-            <div className={`transition-all duration-300 ease-in-out ${
-              activeTab === 'contacts' ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-4 pointer-events-none absolute inset-0'
-            }`}>
-              {activeTab === 'contacts' && (
-                <ErrorBoundary>
-                  <div 
-                    className="h-full" 
-                    onClick={() => window.innerWidth < 768 && setIsSidebarOpen(false)}
-                  >
-                    <Sidebar />
-                  </div>
-                </ErrorBoundary>
-              )}
-            </div>
-            
-            <div className={`transition-all duration-300 ease-in-out ${
-              activeTab === 'groups' ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-4 pointer-events-none absolute inset-0'
-            }`}>
-              {activeTab === 'groups' && (
-                <ErrorBoundary>
-                  <div 
-                    className="h-full" 
-                    onClick={() => window.innerWidth < 768 && setIsSidebarOpen(false)}
-                  >
-                    <GroupSidebar />
-                  </div>
-                </ErrorBoundary>
-              )}
-            </div>
+          <div className="h-full overflow-hidden">
+            {activeTab === 'contacts' ? (
+              <ErrorBoundary>
+                <div 
+                  className="h-full" 
+                  onClick={() => {
+                    console.log('Contact clicked, closing sidebar on mobile');
+                    if (window.innerWidth < 768) setIsSidebarOpen(false);
+                  }}
+                >
+                  <Sidebar />
+                </div>
+              </ErrorBoundary>
+            ) : (
+              <ErrorBoundary>
+                <div 
+                  className="h-full" 
+                  onClick={() => {
+                    console.log('Group clicked, closing sidebar on mobile');
+                    if (window.innerWidth < 768) setIsSidebarOpen(false);
+                  }}
+                >
+                  <GroupSidebar />
+                </div>
+              </ErrorBoundary>
+            )}
           </div>
         </aside>
 
         {/* Enhanced Mobile Sidebar Overlay */}
-        {isSidebarOpen && (
+        {isSidebarOpen && window.innerWidth < 768 && (
           <div 
-            className="md:hidden fixed inset-0 bg-black/60 z-30 transition-opacity duration-300 backdrop-blur-sm"
+            className="fixed inset-0 bg-black/60 z-30 transition-opacity duration-300 backdrop-blur-sm"
             style={{ top: '56px' }}
-            onClick={() => setIsSidebarOpen(false)}
+            onClick={() => {
+              console.log('Overlay clicked, closing sidebar');
+              setIsSidebarOpen(false);
+            }}
           />
         )}
 
