@@ -386,18 +386,17 @@ const ChatContainer = () => {
 
   if (!currentChat) {
     return (
-      <div 
-        className="flex-1 flex items-center justify-center bg-base-100"
-        style={{ height: containerHeight }}
-      >
-        <div className="text-center p-6 max-w-md mx-auto">
-          <div className="text-6xl mb-4 animate-bounce">💬</div>
-          <h3 className="text-xl font-semibold text-base-content/70 mb-2">
-            Welcome to Yap! 🤗
-          </h3>
-          <p className="text-base-content/50">
-            Select a contact or group to start chatting
-          </p>
+      <div className="flex flex-col h-full bg-base-100">
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center p-6 max-w-md mx-auto">
+            <div className="text-6xl mb-4 animate-bounce">💬</div>
+            <h3 className="text-xl font-semibold text-base-content/70 mb-2">
+              Welcome to Yap! 🤗
+            </h3>
+            <p className="text-base-content/50">
+              Select a contact or group to start chatting
+            </p>
+          </div>
         </div>
       </div>
     );
@@ -405,10 +404,10 @@ const ChatContainer = () => {
 
   return (
     <div 
-      className="flex-1 flex flex-col bg-base-100 relative"
+      className="flex flex-col h-full bg-base-100 relative"
       style={{ 
-        height: isKeyboardVisible ? 'auto' : containerHeight,
-        minHeight: isKeyboardVisible ? '400px' : containerHeight
+        height: isKeyboardVisible ? 'auto' : '100%',
+        minHeight: isKeyboardVisible ? '400px' : '100%'
       }}
     >
       {/* Chat Header */}
@@ -484,9 +483,8 @@ const ChatContainer = () => {
       {/* Messages Container */}
       <div 
         ref={messagesContainerRef}
-        className="flex-1 overflow-y-auto overflow-x-hidden bg-gradient-to-b from-base-100 to-base-200/30"
+        className="flex-1 overflow-y-auto overflow-x-hidden bg-gradient-to-b from-base-100 to-base-200/30 min-h-0"
         style={{
-          height: isKeyboardVisible ? 'auto' : 'calc(100% - 120px)',
           WebkitOverflowScrolling: 'touch',
           scrollBehavior: 'smooth'
         }}
