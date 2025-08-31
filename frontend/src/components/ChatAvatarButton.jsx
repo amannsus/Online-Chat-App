@@ -10,7 +10,7 @@ const ChatAvatarButton = ({ size = 40, className = "" }) => {
   const openPicker = () => inputRef.current?.click();
 
   const onFileChange = (e) => {
-    const file = e.target.files?.;
+    const file = e.target.files?.; // FIX: use ?.[] for element access
     if (!file) return;
 
     const reader = new FileReader();
@@ -21,8 +21,8 @@ const ChatAvatarButton = ({ size = 40, className = "" }) => {
         setPreview(dataUrl);
         try {
           await updateProfile({ profilePic: dataUrl });
-        } finally {
-          // no-op
+        } catch {
+          // toast is handled in the store
         }
       },
       false
@@ -41,13 +41,7 @@ const ChatAvatarButton = ({ size = 40, className = "" }) => {
         aria-label="Change avatar"
         disabled={isUpdatingProfile}
       >
-        <img
-          src={src}
-          alt="User avatar"
-          className="w-full h-full object-cover"
-          draggable={false}
-        />
-
+        <img src={src} alt="User avatar" className="w-full h-full object-cover" draggable={false} />
         <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity grid place-items-center">
           {isUpdatingProfile ? (
             <span className="loading loading-spinner loading-sm text-white" />
@@ -56,17 +50,9 @@ const ChatAvatarButton = ({ size = 40, className = "" }) => {
           )}
         </div>
       </button>
-
-      <input
-        ref={inputRef}
-        type="file"
-        accept="image/*"
-        onChange={onFileChange}
-        className="hidden"
-      />
+      <input ref={inputRef} type="file" accept="image/*" onChange={onFileChange} className="hidden" />
     </div>
   );
 };
 
 export default ChatAvatarButton;
-
