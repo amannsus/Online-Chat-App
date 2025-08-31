@@ -47,7 +47,7 @@ const GroupSidebar = () => {
   };
 
   return (
-    <div className="w-80 bg-base-200 border-r border-base-300 flex flex-col">
+    <div className="w-full sm:w-80 shrink-0 bg-base-200 border-r border-base-300 flex flex-col">
       <div className="p-4 border-b border-base-300">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold flex items-center gap-2">
