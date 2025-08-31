@@ -26,7 +26,7 @@ const allowedOrigins = process.env.NODE_ENV === "production"
   ? [
       process.env.FRONTEND_URL,
       "https://online-chat-app-hwop.onrender.com",
-      // Add your actual Netlify URL here
+      "https://yappinng.netlify.app/login",
     ].filter(Boolean) // Remove any undefined values
   : ["http://localhost:5173"];
 
