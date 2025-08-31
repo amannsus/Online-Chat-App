@@ -6,7 +6,7 @@ import Sidebar from '../components/Sidebar';
 import GroupSidebar from '../components/GroupSidebar';
 import ChatContainer from '../components/ChatContainer';
 import ErrorBoundary from '../components/ErrorBoundary';
-import { Settings, User, LogOut, MessageSquare, Users, Home, Menu } from "lucide-react";
+import { Settings, User, LogOut, MessageSquare, Users, Home } from "lucide-react";
 
 const ChatPage = () => {
   const { authUser, logout } = useAuthStore();
@@ -14,7 +14,9 @@ const ChatPage = () => {
   const [activeTab, setActiveTab] = useState('contacts');
 
   useEffect(() => {
-    if (authUser) connectSocket(authUser._id);
+    if (authUser) {
+      connectSocket(authUser._id);
+    }
   }, [authUser, connectSocket]);
 
   if (!authUser) {
@@ -28,69 +30,47 @@ const ChatPage = () => {
   }
 
   return (
-    <div className="drawer lg:drawer-open bg-base-200 min-h-dvh">
-      {/* Drawer toggle */}
-      <input id="chat-drawer" type="checkbox" className="drawer-toggle" />
-
-      {/* Main content */}
-      <div className="drawer-content flex flex-col min-h-dvh">
-        {/* Top bar */}
-        <div className="flex items-center justify-between w-full p-4 border-b border-base-300 bg-base-100">
-          <div className="flex items-center gap-3">
-            {/* Mobile open button */}
-            <label htmlFor="chat-drawer" className="btn btn-ghost btn-sm lg:hidden" aria-label="Open sidebar">
-              <Menu className="w-5 h-5" />
-            </label>
-
-            <div className="size-10 rounded-full bg-primary/10 hidden md:flex items-center justify-center">
-              <span className="text-primary font-semibold">
-                {authUser.fullName?.charAt(0) || 'U'}
-              </span>
-            </div>
-            <h1 className="text-lg font-semibold">Yap!🤗</h1>
-            <div className={`ml-2 text-xs ${isConnected ? 'text-success' : 'text-error'}`}>
-              {isConnected ? 'Connected' : 'Disconnected'}
-            </div>
+    <div className="min-h-dvh bg-base-200 flex flex-col">
+      {/* Header */}
+      <div className="flex items-center justify-between w-full p-4 border-b border-base-300">
+        <div className="flex items-center gap-3">
+          <div className="size-10 rounded-full bg-primary/10 flex items-center justify-center">
+            <span className="text-primary font-semibold">
+              {authUser.fullName?.charAt(0) || 'U'}
+            </span>
           </div>
-
-          <div className="flex items-center gap-2">
-            <Link to="/" className="btn btn-sm gap-2" title="Home">
-              <Home className="w-4 h-4" />
-              <span className="hidden sm:inline">Home</span>
-            </Link>
-            <Link to="/settings" className="btn btn-sm gap-2" title="Settings">
-              <Settings className="w-4 h-4" />
-              <span className="hidden sm:inline">Settings</span>
-            </Link>
-            <Link to="/profile" className="btn btn-sm gap-2" title="Profile">
-              <User className="w-4 h-4" />
-              <span className="hidden sm:inline">Profile</span>
-            </Link>
-            <button className="btn btn-sm gap-2" onClick={logout} title="Logout">
-              <LogOut className="w-4 h-4" />
-              <span className="hidden sm:inline">Logout</span>
-            </button>
+          <h1 className="text-lg font-semibold">Yap!🤗</h1>
+          <div className={`ml-2 text-xs ${isConnected ? 'text-success' : 'text-error'}`}>
+            {isConnected ? 'Connected' : 'Disconnected'}
           </div>
         </div>
 
-        {/* Body uses dynamic viewport height */}
-        <div className="flex-1 min-h-0" style={{ height: 'calc(100dvh - 4rem)' }}>
-          <div className="flex h-full">
-            <ErrorBoundary>
-              <div className="flex-1 min-w-0">
-                <ChatContainer />
-              </div>
-            </ErrorBoundary>
-          </div>
+        <div className="flex items-center gap-2">
+          <Link to="/" className="btn btn-sm gap-2" title="Home">
+            <Home className="w-4 h-4" />
+            <span className="hidden sm:inline">Home</span>
+          </Link>
+
+          <Link to="/settings" className="btn btn-sm gap-2" title="Settings">
+            <Settings className="w-4 h-4" />
+            <span className="hidden sm:inline">Settings</span>
+          </Link>
+
+          <Link to="/profile" className="btn btn-sm gap-2" title="Profile">
+            <User className="w-4 h-4" />
+            <span className="hidden sm:inline">Profile</span>
+          </Link>
+
+          <button className="btn btn-sm gap-2" onClick={logout} title="Logout">
+            <LogOut className="w-4 h-4" />
+            <span className="hidden sm:inline">Logout</span>
+          </button>
         </div>
       </div>
 
-      {/* Drawer side */}
-      <div className="drawer-side">
-        <label htmlFor="chat-drawer" className="drawer-overlay" aria-label="Close sidebar"></label>
-
-        <div className="w-80 bg-base-200 border-r border-base-300 flex flex-col">
-          {/* Tabs inside drawer */}
+      {/* Content area fills remaining dynamic viewport height */}
+      <div className="flex flex-1 min-h-0">
+        <div className="flex flex-col">
           <div className="flex bg-base-300">
             <button
               onClick={() => setActiveTab('contacts')}
@@ -116,12 +96,20 @@ const ChatPage = () => {
             </button>
           </div>
 
-          <div className="flex-1 min-h-0 overflow-y-auto">
+          {activeTab === 'contacts' ? (
             <ErrorBoundary>
-              {activeTab === 'contacts' ? <Sidebar /> : <GroupSidebar />}
+              <Sidebar />
             </ErrorBoundary>
-          </div>
+          ) : (
+            <ErrorBoundary>
+              <GroupSidebar />
+            </ErrorBoundary>
+          )}
         </div>
+
+        <ErrorBoundary>
+          <ChatContainer />
+        </ErrorBoundary>
       </div>
     </div>
   );
