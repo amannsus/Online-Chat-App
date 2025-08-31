@@ -1,3 +1,36 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Root: fill the visible viewport and keep app background (daisyUI --b2) */
+html, body, #root {
+  position: relative;
+  min-height: 100dvh;              /* modern browsers */
+  background: hsl(var(--b2));      /* match theme surface */
+  color: hsl(var(--bc));           /* theme text color */
+  overscroll-behavior: none;       /* avoid rubber-band showing page bg */
+}
+
+/* Fallbacks for older engines */
+@supports not (min-height: 100dvh) {
+  html, body, #root { min-height: 100svh; }
+}
+@supports (height: -webkit-fill-available) and not (min-height: 100dvh) {
+  html, body, #root { min-height: -webkit-fill-available; }
+}
+
+/* Ensure any full-screen overlays/sidesheets cover the visible viewport */
+.drawer-content,
+.drawer-side,
+.drawer-overlay,
+.modal,
+.modal-box,
+[role="dialog"] {
+  min-height: 100dvh !important;
+}
+
+/* Optional: respect device bottom safe area (gesture bar) */
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0);
+}
+
