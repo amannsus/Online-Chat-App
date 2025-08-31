@@ -21,13 +21,13 @@ const __dirname = path.resolve();
 const app = express();
 const server = http.createServer(app);
 
-// CORS origins for production
+
 const allowedOrigins = process.env.NODE_ENV === "production" 
   ? [
       process.env.FRONTEND_URL,
       "https://online-chat-app-hwop.onrender.com",
-      "https://yappinng.netlify.app/login",
-    ].filter(Boolean) // Remove any undefined values
+      "https://yappinng.netlify.app",  // Fixed: domain only, no path
+    ].filter(Boolean)
   : ["http://localhost:5173"];
 
 const io = new Server(server, {
@@ -40,15 +40,19 @@ const io = new Server(server, {
           if (allowedOrigins.indexOf(origin) !== -1) {
             callback(null, true);
           } else {
-            console.log(`Blocked CORS for origin: ${origin}`);
-            callback(null, true); // Allow all origins for now to prevent issues
+            console.log(`CORS request from origin: ${origin}`);
+            // For now, allow but log for debugging
+            callback(null, true);
           }
         }
       : "http://localhost:5173",
     methods: ["GET", "POST"],
     credentials: true,
     transports: ['websocket', 'polling']
-  }
+  },
+  // Add these to prevent connection issues
+  pingTimeout: 60000,
+  pingInterval: 25000
 });
 
 app.set('io', io);
@@ -67,14 +71,14 @@ app.use(cookieParser());
 app.use(cors({
   origin: process.env.NODE_ENV === "production" 
     ? (origin, callback) => {
-        // Allow requests with no origin (like mobile apps or curl requests)
+        // Allow requests with no origin
         if (!origin) return callback(null, true);
         
         if (allowedOrigins.indexOf(origin) !== -1) {
           callback(null, true);
         } else {
-          console.log(`Blocked CORS for origin: ${origin}`);
-          callback(null, true); // Allow all origins for now to prevent issues
+          console.log(`CORS request from origin: ${origin}`);
+          callback(null, true); // Allow for now but log
         }
       }
     : "http://localhost:5173",
@@ -83,7 +87,7 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'Cookie'],
 }));
 
-// API Routes - these must come BEFORE static file serving
+// API Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/message", messageRoutes);
 app.use("/api/users", userRoutes);
@@ -94,7 +98,6 @@ handleConnection(io);
 
 // Serve static files from frontend build in production
 if (process.env.NODE_ENV === "production") {
-  // Serve static files from frontend/dist
   const frontendPath = path.join(__dirname, "../frontend/dist");
   app.use(express.static(frontendPath));
   
@@ -107,7 +110,7 @@ if (process.env.NODE_ENV === "production") {
     });
   });
   
-  // Catch-all handler: send back index.html for any non-API routes
+  // Catch-all handler
   app.get("*", (req, res) => {
     try {
       const indexPath = path.join(frontendPath, "index.html");
@@ -118,7 +121,6 @@ if (process.env.NODE_ENV === "production") {
     }
   });
 } else {
-  // Development mode - just show API status
   app.get("/", (req, res) => {
     res.json({ 
       message: "Chat API is running in development mode!",
@@ -127,7 +129,6 @@ if (process.env.NODE_ENV === "production") {
     });
   });
   
-  // Health check for development
   app.get("/api/health", (req, res) => {
     res.json({ 
       status: "ok", 
