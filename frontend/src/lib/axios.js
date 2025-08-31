@@ -25,10 +25,23 @@ export const axiosInstance = axios.create({
 axiosInstance.interceptors.response.use(
   (response) => response,
   (error) => {
-    console.error('API Error:', error);
-    if (error.response?.status === 401) {
-      // Handle unauthorized errors
-      window.location.href = '/login';
+    const status = error.response?.status;
+    const path = window.location.pathname;
+    const url = error.config?.url || "";
+
+    if (status === 401) {
+      // Ignore the initial auth check 401 to avoid login page reload loops
+      const isAuthCheck = url.includes('/auth/check');
+
+      const onAuthPages = path.startsWith('/login') || path.startsWith('/signup');
+      if (!onAuthPages && !isAuthCheck) {
+        if (window.navigateToLogin) {
+          window.navigateToLogin(); // spa navigation if provided
+        } else {
+          window.location.replace('/login'); // avoid full reload loop
+        }
+      }
+      // If already on auth pages or it’s /auth/check, let the app render normally
     }
     return Promise.reject(error);
   }
