@@ -177,7 +177,12 @@ const ChatPage = () => {
           <div className="flex items-center gap-2 flex-1 min-w-0">
             <button 
               className="sidebar-toggle md:hidden btn btn-ghost btn-sm btn-square hover:scale-105 active:scale-95 transition-transform"
-              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('Sidebar toggle clicked!', isSidebarOpen); // Debug log
+                setIsSidebarOpen(!isSidebarOpen);
+              }}
             >
               <Menu className="w-5 h-5" />
             </button>
@@ -232,7 +237,11 @@ const ChatPage = () => {
           {/* Mobile Menu Toggle */}
           <button 
             className="lg:hidden btn btn-ghost btn-sm btn-square hover:scale-105 active:scale-95 transition-transform"
-            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setIsMobileMenuOpen(!isMobileMenuOpen);
+            }}
           >
             {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
