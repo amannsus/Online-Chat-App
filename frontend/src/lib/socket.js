@@ -1,10 +1,9 @@
-
 import { io } from 'socket.io-client';
 
 const getSocketURL = () => {
   if (import.meta.env.MODE === "development") return 'http://localhost:5001';
-  // Use backend URL for websockets; cookies aren’t required for your socket join flow
-  return import.meta.env.VITE_BACKEND_URL; // e.g., https://online-chat-app-hwop.onrender.com
+  const backendUrl = import.meta.env.VITE_BACKEND_URL;
+  return backendUrl || window.location.origin;
 };
 
 export const socket = io(getSocketURL(), {
