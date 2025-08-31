@@ -1,3 +1,4 @@
+// frontend/src/components/Sidebar.jsx
 import React, { useState, useEffect } from 'react';
 import { Users, UserPlus, Bell, Search } from 'lucide-react';
 import { useChatStore } from '../store/useChatStore';
@@ -23,7 +24,6 @@ const Sidebar = () => {
     getFriendRequests();
   }, [loadContacts, getFriendRequests]);
 
-  // Add safety checks for array operations
   const safeContacts = Array.isArray(contacts) ? contacts : [];
   const safeFriendRequests = Array.isArray(friendRequests) ? friendRequests : [];
   
@@ -31,6 +31,11 @@ const Sidebar = () => {
     contact.fullName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     contact.email?.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const closeDrawerIfOpen = () => {
+    const el = document.getElementById('chat-drawer');
+    if (el && el.checked) el.checked = false;
+  };
 
   return (
     <div className="w-80 bg-base-200 border-r border-base-300 flex flex-col">
@@ -98,7 +103,7 @@ const Sidebar = () => {
           filteredContacts.map((contact) => (
             <div
               key={contact._id}
-              onClick={() => setSelectedContact(contact)}
+              onClick={() => { setSelectedContact(contact); closeDrawerIfOpen(); }}
               className={`flex items-center gap-3 p-4 hover:bg-base-300 cursor-pointer border-b border-base-300 ${
                 selectedContact?._id === contact._id ? 'bg-primary/10' : ''
               }`}
