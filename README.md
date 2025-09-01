@@ -157,11 +157,13 @@ Open [http://localhost:5173](http://localhost:5173) in your browser.
 
 ### Backend
 
-* Use Railway, Render, or Heroku
+*  Render
 * Configure environment variables
 
 ### Frontend
 
+* Use Netlify
+* Configure environment variables
 ```bash
 npm run build
 ```
