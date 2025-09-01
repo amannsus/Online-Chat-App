@@ -23,7 +23,6 @@ const Sidebar = () => {
     getFriendRequests();
   }, [loadContacts, getFriendRequests]);
 
-  // Add safety checks for array operations
   const safeContacts = Array.isArray(contacts) ? contacts : [];
   const safeFriendRequests = Array.isArray(friendRequests) ? friendRequests : [];
   
@@ -33,7 +32,7 @@ const Sidebar = () => {
   );
 
   return (
-    <div className="w-80 bg-base-200 border-r border-base-300 flex flex-col">
+    <div className="w-64 md:w-72 bg-base-200 border-r border-base-300 flex flex-col">
       <div className="p-4 border-b border-base-300">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold flex items-center gap-2">
