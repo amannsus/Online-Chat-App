@@ -2,158 +2,19 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, shrink-to-fit=no"
-    />
-    <meta name="theme-color" content="#0f1419" />
-    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f8fafc" />
-    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0f1419" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-    <meta name="mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="format-detection" content="telephone=no, date=no, email=no, address=no" />
-    <meta name="mobile-web-app-title" content="Yap!" />
-    <meta name="application-name" content="Yap!" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <link rel="apple-touch-icon" href="/vite.svg" />
-    <link rel="dns-prefetch" href="//fonts.googleapis.com" />
-    <link rel="preconnect" href="//fonts.gstatic.com" crossorigin />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Yap!</title>
-
-    <style>
-      :root { color-scheme: light dark; }
-      html { background: #f8fafc; height: 100%; height: 100vh; height: 100dvh; overflow-x: hidden; -webkit-overflow-scrolling: touch; scroll-behavior: smooth; -webkit-text-size-adjust: 100%; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
-      html[data-theme="dark"] { background: #0f1419; color-scheme: dark; }
-      html[data-theme="light"] { background: #f8fafc; color-scheme: light; }
-      body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background: inherit; color: inherit; height: 100%; height: 100vh; height: 100dvh; overscroll-behavior: none; touch-action: manipulation; transition: background-color 0.3s ease, color 0.3s ease; }
-      #root { height: 100%; height: 100vh; height: 100dvh; background: inherit; color: inherit; opacity: 0; animation: fadeInRoot 0.5s ease forwards; animation-delay: 0.1s; }
-      @keyframes fadeInRoot { from { opacity: 0; } to { opacity: 1; } }
-      .initial-loading { display: flex; align-items: center; justify-content: center; height: 100vh; height: 100dvh; background: inherit; flex-direction: column; font-family: inherit; }
-      .initial-loading-spinner { width: 40px; height: 40px; border: 3px solid rgba(59, 130, 246, 0.3); border-top: 3px solid #3b82f6; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 16px; }
-      @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-      .initial-loading-text { color: #6b7280; font-size: 14px; font-weight: 500; }
-      html[data-theme="dark"] .initial-loading-text { color: #9ca3af; }
-      * { box-sizing: border-box; }
-      button, [role="button"] { min-height: 44px; min-width: 44px; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
-      input, textarea, select { font-size: 16px; -webkit-appearance: none; }
-      .app-content { visibility: hidden; }
-      .app-loaded .app-content { visibility: visible; }
-    </style>
-
     <script>
+      // Apply theme immediately to prevent flash
       (function() {
-        try {
-          let savedTheme = localStorage.getItem('theme');
-          if (!savedTheme) {
-            savedTheme = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-          }
-          const html = document.documentElement;
-          html.setAttribute('data-theme', savedTheme);
-          const themeColorMeta = document.querySelector('meta[name="theme-color"]:not([media])');
-          if (themeColorMeta) themeColorMeta.setAttribute('content', savedTheme === 'dark' ? '#0f1419' : '#f8fafc');
-          function setVH() { const vh = window.innerHeight * 0.01; html.style.setProperty('--vh', `${vh}px`); }
-          setVH();
-          let resizeTimeout;
-          function handleResize() { clearTimeout(resizeTimeout); resizeTimeout = setTimeout(setVH, 100); }
-          window.addEventListener('resize', handleResize);
-          window.addEventListener('orientationchange', function() { setTimeout(setVH, 300); });
-          window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function(e) {
-            if (!localStorage.getItem('theme')) {
-              const newTheme = e.matches ? 'dark' : 'light';
-              html.setAttribute('data-theme', newTheme);
-              if (themeColorMeta) themeColorMeta.setAttribute('content', newTheme === 'dark' ? '#0f1419' : '#f8fafc');
-            }
-          });
-        } catch (error) {
-          console.warn('Theme initialization error:', error);
-          document.documentElement.setAttribute('data-theme', 'light');
-        }
+        const savedTheme = localStorage.getItem('theme') || 'light';
+        document.documentElement.setAttribute('data-theme', savedTheme);
       })();
     </script>
   </head>
   <body>
-    <div id="initial-loader" class="initial-loading">
-      <div class="initial-loading-spinner"></div>
-      <div class="initial-loading-text">Loading Yap!...</div>
-    </div>
-
-    <div id="root" class="app-content"></div>
-
-    <script type="module">
-      window.addEventListener('DOMContentLoaded', function() {
-        const loader = document.getElementById('initial-loader');
-        const root = document.getElementById('root');
-        if (loader) {
-          loader.style.transition = 'opacity 0.3s ease';
-          loader.style.opacity = '0';
-          setTimeout(() => { if (loader.parentNode) loader.parentNode.removeChild(loader); }, 300);
-        }
-        document.documentElement.classList.add('app-loaded');
-      });
-
-      import('/src/main.jsx').catch(error => {
-        console.error('Failed to load main app:', error);
-        const root = document.getElementById('root');
-        if (root) {
-          root.innerHTML = `
-            <div style="
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              height: 100vh;
-              padding: 20px;
-              text-align: center;
-              background: inherit;
-              color: inherit;
-              flex-direction: column;
-            ">
-              <h2 style="margin-bottom: 16px; color: #ef4444;">Failed to load app</h2>
-              <p style="margin-bottom: 20px; color: #6b7280;">Please check your internet connection and try again.</p>
-              <button onclick="window.location.reload()" style="
-                padding: 12px 24px;
-                background: #3b82f6;
-                color: white;
-                border: none;
-                border-radius: 6px;
-                cursor: pointer;
-                font-size: 16px;
-              ">
-                Reload Page
-              </button>
-            </div>
-          `;
-        }
-      });
-    </script>
-
-    <!-- Safe service worker registration (only if sw.js exists and is JS) -->
-    <script>
-      (async function() {
-        try {
-          if ('serviceWorker' in navigator && window.location.protocol === 'https:') {
-            const res = await fetch('/sw.js', { method: 'HEAD' });
-            const ctype = (res.headers.get('content-type') || '').toLowerCase();
-            if (res.ok && (ctype.includes('javascript') || ctype.includes('ecmascript'))) {
-              navigator.serviceWorker.register('/sw.js').catch(function(error) {
-                console.log('ServiceWorker registration failed:', error);
-              });
-            }
-          }
-        } catch (e) {
-          console.log('ServiceWorker not registered:', e);
-        }
-      })();
-    </script>
-
-    <script>
-      document.addEventListener('contextmenu', function(e) { if (window.innerWidth <= 768) e.preventDefault(); });
-      let lastTouchEnd = 0;
-      document.addEventListener('touchend', function(e) {
-        const now = (new Date()).getTime();
-        if (now - lastTouchEnd <= 300) e.preventDefault();
-        lastTouchEnd = now;
-      });
-    </script>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
