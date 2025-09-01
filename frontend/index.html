@@ -2,288 +2,107 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    
-    <!-- Viewport configuration optimized for mobile devices including Android -->
-    <meta 
-      name="viewport" 
+    <meta
+      name="viewport"
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, shrink-to-fit=no"
     />
-    
-    <!-- Theme color that matches app background to prevent white flash on Android -->
     <meta name="theme-color" content="#0f1419" />
     <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f8fafc" />
     <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0f1419" />
-    
-    <!-- Status bar styling for mobile browsers -->
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    
-    <!-- Prevent telephone number detection and other automatic formatting -->
     <meta name="format-detection" content="telephone=no, date=no, email=no, address=no" />
-    
-    <!-- Optimize for Android Chrome -->
     <meta name="mobile-web-app-title" content="Yap!" />
     <meta name="application-name" content="Yap!" />
-    
-    <!-- Favicon and app icons -->
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <link rel="apple-touch-icon" href="/vite.svg" />
-    
-    <!-- Preconnect to improve loading performance -->
     <link rel="dns-prefetch" href="//fonts.googleapis.com" />
     <link rel="preconnect" href="//fonts.gstatic.com" crossorigin />
-    
-    <!-- Page title -->
     <title>Yap!</title>
-    
-    <!-- Critical CSS to prevent flash of unstyled content -->
+
     <style>
-      /* Immediate theme application to prevent white flash */
-      :root {
-        color-scheme: light dark;
-      }
-      
-      html {
-        /* Set initial background immediately */
-        background: #f8fafc;
-        height: 100%;
-        height: 100vh;
-        height: 100dvh;
-        /* Prevent horizontal scroll */
-        overflow-x: hidden;
-        /* Smooth scrolling */
-        -webkit-overflow-scrolling: touch;
-        scroll-behavior: smooth;
-        /* Prevent zoom on iOS */
-        -webkit-text-size-adjust: 100%;
-        /* Better font rendering */
-        -webkit-font-smoothing: antialiased;
-        -moz-osx-font-smoothing: grayscale;
-      }
-      
-      html[data-theme="dark"] {
-        background: #0f1419;
-        color-scheme: dark;
-      }
-      
-      html[data-theme="light"] {
-        background: #f8fafc;
-        color-scheme: light;
-      }
-      
-      body {
-        margin: 0;
-        padding: 0;
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-        background: inherit;
-        color: inherit;
-        height: 100%;
-        height: 100vh;
-        height: 100dvh;
-        /* Prevent bounce scrolling on iOS */
-        overscroll-behavior: none;
-        /* Better touch experience */
-        touch-action: manipulation;
-        /* Prevent flicker during theme switches */
-        transition: background-color 0.3s ease, color 0.3s ease;
-      }
-      
-      #root {
-        height: 100%;
-        height: 100vh;
-        height: 100dvh;
-        background: inherit;
-        color: inherit;
-        /* Prevent flash of unstyled content */
-        opacity: 0;
-        animation: fadeInRoot 0.5s ease forwards;
-        animation-delay: 0.1s;
-      }
-      
-      @keyframes fadeInRoot {
-        from { opacity: 0; }
-        to { opacity: 1; }
-      }
-      
-      /* Loading spinner for immediate feedback */
-      .initial-loading {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        height: 100vh;
-        height: 100dvh;
-        background: inherit;
-        flex-direction: column;
-        font-family: inherit;
-      }
-      
-      .initial-loading-spinner {
-        width: 40px;
-        height: 40px;
-        border: 3px solid rgba(59, 130, 246, 0.3);
-        border-top: 3px solid #3b82f6;
-        border-radius: 50%;
-        animation: spin 1s linear infinite;
-        margin-bottom: 16px;
-      }
-      
-      @keyframes spin {
-        from { transform: rotate(0deg); }
-        to { transform: rotate(360deg); }
-      }
-      
-      .initial-loading-text {
-        color: #6b7280;
-        font-size: 14px;
-        font-weight: 500;
-      }
-      
-      html[data-theme="dark"] .initial-loading-text {
-        color: #9ca3af;
-      }
-      
-      /* Prevent layout shift */
-      * {
-        box-sizing: border-box;
-      }
-      
-      /* Optimize for mobile tap targets */
-      button, [role="button"] {
-        min-height: 44px;
-        min-width: 44px;
-        touch-action: manipulation;
-        -webkit-tap-highlight-color: transparent;
-      }
-      
-      /* Prevent zoom on input focus for iOS */
-      input, textarea, select {
-        font-size: 16px;
-        -webkit-appearance: none;
-      }
-      
-      /* Hide content until properly loaded */
-      .app-content {
-        visibility: hidden;
-      }
-      
-      .app-loaded .app-content {
-        visibility: visible;
-      }
+      :root { color-scheme: light dark; }
+      html { background: #f8fafc; height: 100%; height: 100vh; height: 100dvh; overflow-x: hidden; -webkit-overflow-scrolling: touch; scroll-behavior: smooth; -webkit-text-size-adjust: 100%; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+      html[data-theme="dark"] { background: #0f1419; color-scheme: dark; }
+      html[data-theme="light"] { background: #f8fafc; color-scheme: light; }
+      body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background: inherit; color: inherit; height: 100%; height: 100vh; height: 100dvh; overscroll-behavior: none; touch-action: manipulation; transition: background-color 0.3s ease, color 0.3s ease; }
+      #root { height: 100%; height: 100vh; height: 100dvh; background: inherit; color: inherit; opacity: 0; animation: fadeInRoot 0.5s ease forwards; animation-delay: 0.1s; }
+      @keyframes fadeInRoot { from { opacity: 0; } to { opacity: 1; } }
+      .initial-loading { display: flex; align-items: center; justify-content: center; height: 100vh; height: 100dvh; background: inherit; flex-direction: column; font-family: inherit; }
+      .initial-loading-spinner { width: 40px; height: 40px; border: 3px solid rgba(59, 130, 246, 0.3); border-top: 3px solid #3b82f6; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 16px; }
+      @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+      .initial-loading-text { color: #6b7280; font-size: 14px; font-weight: 500; }
+      html[data-theme="dark"] .initial-loading-text { color: #9ca3af; }
+      * { box-sizing: border-box; }
+      button, [role="button"] { min-height: 44px; min-width: 44px; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+      input, textarea, select { font-size: 16px; -webkit-appearance: none; }
+      .app-content { visibility: hidden; }
+      .app-loaded .app-content { visibility: visible; }
     </style>
-    
-    <!-- Theme script - must run immediately to prevent flash -->
+
     <script>
-      // Immediately apply theme to prevent white flash
       (function() {
         try {
-          // Get saved theme or detect system preference
           let savedTheme = localStorage.getItem('theme');
-          
           if (!savedTheme) {
-            // Detect system theme preference
-            savedTheme = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches 
-              ? 'dark' 
-              : 'light';
+            savedTheme = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
           }
-          
-          // Apply theme immediately
           const html = document.documentElement;
           html.setAttribute('data-theme', savedTheme);
-          
-          // Update theme color meta tag for Android
           const themeColorMeta = document.querySelector('meta[name="theme-color"]:not([media])');
-          if (themeColorMeta) {
-            themeColorMeta.setAttribute('content', savedTheme === 'dark' ? '#0f1419' : '#f8fafc');
-          }
-          
-          // Set CSS custom property for viewport height (Android fix)
-          function setVH() {
-            const vh = window.innerHeight * 0.01;
-            html.style.setProperty('--vh', `${vh}px`);
-          }
-          
+          if (themeColorMeta) themeColorMeta.setAttribute('content', savedTheme === 'dark' ? '#0f1419' : '#f8fafc');
+          function setVH() { const vh = window.innerHeight * 0.01; html.style.setProperty('--vh', `${vh}px`); }
           setVH();
-          
-          // Update on resize and orientation change
           let resizeTimeout;
-          function handleResize() {
-            clearTimeout(resizeTimeout);
-            resizeTimeout = setTimeout(setVH, 100);
-          }
-          
+          function handleResize() { clearTimeout(resizeTimeout); resizeTimeout = setTimeout(setVH, 100); }
           window.addEventListener('resize', handleResize);
-          window.addEventListener('orientationchange', function() {
-            setTimeout(setVH, 300);
-          });
-          
-          // Listen for theme changes
+          window.addEventListener('orientationchange', function() { setTimeout(setVH, 300); });
           window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function(e) {
             if (!localStorage.getItem('theme')) {
               const newTheme = e.matches ? 'dark' : 'light';
               html.setAttribute('data-theme', newTheme);
-              if (themeColorMeta) {
-                themeColorMeta.setAttribute('content', newTheme === 'dark' ? '#0f1419' : '#f8fafc');
-              }
+              if (themeColorMeta) themeColorMeta.setAttribute('content', newTheme === 'dark' ? '#0f1419' : '#f8fafc');
             }
           });
-          
         } catch (error) {
           console.warn('Theme initialization error:', error);
-          // Fallback to light theme
           document.documentElement.setAttribute('data-theme', 'light');
         }
       })();
     </script>
-    
-    <!-- Preload critical resources -->
-    <link rel="modulepreload" href="/src/main.jsx" />
   </head>
   <body>
-    <!-- Initial loading screen to prevent blank page -->
     <div id="initial-loader" class="initial-loading">
       <div class="initial-loading-spinner"></div>
       <div class="initial-loading-text">Loading Yap!...</div>
     </div>
-    
-    <!-- Main app container -->
+
     <div id="root" class="app-content"></div>
-    
-    <!-- Main script -->
+
     <script type="module">
-      // Remove initial loader when app loads
       window.addEventListener('DOMContentLoaded', function() {
         const loader = document.getElementById('initial-loader');
         const root = document.getElementById('root');
-        
-        // Fade out loader
         if (loader) {
           loader.style.transition = 'opacity 0.3s ease';
           loader.style.opacity = '0';
-          setTimeout(() => {
-            if (loader.parentNode) {
-              loader.parentNode.removeChild(loader);
-            }
-          }, 300);
+          setTimeout(() => { if (loader.parentNode) loader.parentNode.removeChild(loader); }, 300);
         }
-        
-        // Mark app as loaded
         document.documentElement.classList.add('app-loaded');
       });
-      
-      // Import main app
+
       import('/src/main.jsx').catch(error => {
         console.error('Failed to load main app:', error);
-        // Show error message
         const root = document.getElementById('root');
         if (root) {
           root.innerHTML = `
             <div style="
-              display: flex; 
-              align-items: center; 
-              justify-content: center; 
-              height: 100vh; 
-              padding: 20px; 
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              height: 100vh;
+              padding: 20px;
               text-align: center;
               background: inherit;
               color: inherit;
@@ -292,11 +111,11 @@
               <h2 style="margin-bottom: 16px; color: #ef4444;">Failed to load app</h2>
               <p style="margin-bottom: 20px; color: #6b7280;">Please check your internet connection and try again.</p>
               <button onclick="window.location.reload()" style="
-                padding: 12px 24px; 
-                background: #3b82f6; 
-                color: white; 
-                border: none; 
-                border-radius: 6px; 
+                padding: 12px 24px;
+                background: #3b82f6;
+                color: white;
+                border: none;
+                border-radius: 6px;
                 cursor: pointer;
                 font-size: 16px;
               ">
@@ -307,32 +126,32 @@
         }
       });
     </script>
-    
-    <!-- Service Worker for better caching (optional) -->
+
+    <!-- Safe service worker registration (only if sw.js exists and is JS) -->
     <script>
-      // Register service worker for better offline experience
-      if ('serviceWorker' in navigator && window.location.protocol === 'https:') {
-        navigator.serviceWorker.register('/sw.js').catch(function(error) {
-          console.log('ServiceWorker registration failed:', error);
-        });
-      }
-    </script>
-    
-    <!-- Prevent context menu on long press for better mobile UX -->
-    <script>
-      document.addEventListener('contextmenu', function(e) {
-        if (window.innerWidth <= 768) {
-          e.preventDefault();
+      (async function() {
+        try {
+          if ('serviceWorker' in navigator && window.location.protocol === 'https:') {
+            const res = await fetch('/sw.js', { method: 'HEAD' });
+            const ctype = (res.headers.get('content-type') || '').toLowerCase();
+            if (res.ok && (ctype.includes('javascript') || ctype.includes('ecmascript'))) {
+              navigator.serviceWorker.register('/sw.js').catch(function(error) {
+                console.log('ServiceWorker registration failed:', error);
+              });
+            }
+          }
+        } catch (e) {
+          console.log('ServiceWorker not registered:', e);
         }
-      });
-      
-      // Prevent double-tap zoom
+      })();
+    </script>
+
+    <script>
+      document.addEventListener('contextmenu', function(e) { if (window.innerWidth <= 768) e.preventDefault(); });
       let lastTouchEnd = 0;
       document.addEventListener('touchend', function(e) {
         const now = (new Date()).getTime();
-        if (now - lastTouchEnd <= 300) {
-          e.preventDefault();
-        }
+        if (now - lastTouchEnd <= 300) e.preventDefault();
         lastTouchEnd = now;
       });
     </script>
