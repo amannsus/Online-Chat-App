@@ -18,9 +18,7 @@ const GroupSidebar = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [leavingGroupId, setLeavingGroupId] = useState(null);
 
-  useEffect(() => {
-    loadGroups();
-  }, [loadGroups]);
+  useEffect(() => { loadGroups(); }, [loadGroups]);
 
   const safeGroups = Array.isArray(groups) ? groups : [];
   const filteredGroups = safeGroups.filter(group =>
@@ -32,8 +30,6 @@ const GroupSidebar = () => {
       try {
         setLeavingGroupId(groupId);
         await leaveGroup(groupId);
-      } catch (error) {
-        console.error('Failed to leave group:', error);
       } finally {
         setLeavingGroupId(null);
       }
@@ -45,7 +41,7 @@ const GroupSidebar = () => {
   };
 
   return (
-    <div className="w-64 md:w-72 bg-base-200 border-r border-base-300 flex flex-col">
+    <div className="w-full md:w-72 lg:w-80 bg-base-200 border-r border-base-300 flex flex-col">
       <div className="p-4 border-b border-base-300">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold flex items-center gap-2">
@@ -118,9 +114,7 @@ const GroupSidebar = () => {
                 </div>
                 
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold truncate">
-                    {group.name || 'Unknown Group'}
-                  </h3>
+                  <h3 className="font-semibold truncate">{group.name || 'Unknown Group'}</h3>
                   <p className="text-sm text-base-content/70 truncate">
                     {group.members?.length || 0} members
                   </p>
