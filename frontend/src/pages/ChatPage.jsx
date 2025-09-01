@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuthStore } from "../store/useAuthStore";
 import { useChatStore } from "../store/useChatStore";
@@ -10,18 +10,18 @@ import { Settings, User, LogOut, MessageSquare, Users, Home } from "lucide-react
 
 const ChatPage = () => {
   const { authUser, logout } = useAuthStore();
-  const { connectSocket, isConnected } = useChatStore();
+  const { connectSocket, isConnected, selectedContact, selectedGroup } = useChatStore();
   const [activeTab, setActiveTab] = useState('contacts');
 
+  const isChatOpen = useMemo(() => Boolean(selectedContact || selectedGroup), [selectedContact, selectedGroup]);
+
   useEffect(() => {
-    if (authUser) {
-      connectSocket(authUser._id);
-    }
+    if (authUser) connectSocket(authUser._id);
   }, [authUser, connectSocket]);
 
   if (!authUser) {
     return (
-      <div className="flex items-center justify-center h-[100dvh]">
+      <div className="flex items-center justify-center chat-screen">
         <div className="text-center">
           <h2 className="text-xl font-semibold">Please log in to access chat</h2>
         </div>
@@ -30,7 +30,8 @@ const ChatPage = () => {
   }
 
   return (
-    <div className="h-[100dvh] min-h-[100dvh] bg-base-200 flex flex-col safe-bottom">
+    <div className="chat-screen bg-base-200 flex flex-col">
+      {/* Top bar */}
       <div className="flex items-center justify-between w-full p-4 border-b border-base-300">
         <div className="flex items-center gap-3">
           <div className="size-10 rounded-full bg-primary/10 flex items-center justify-center">
@@ -43,48 +44,31 @@ const ChatPage = () => {
             {isConnected ? 'Connected' : 'Disconnected'}
           </div>
         </div>
-        
+
         <div className="flex items-center gap-2">
-          <Link 
-            to="/" 
-            className="btn btn-sm gap-2"
-            title="Home"
-          >
+          <Link to="/" className="btn btn-sm gap-2" title="Home">
             <Home className="w-4 h-4" />
             <span className="hidden sm:inline">Home</span>
           </Link>
-          
-          <Link 
-            to="/settings" 
-            className="btn btn-sm gap-2"
-            title="Settings"
-          >
+          <Link to="/settings" className="btn btn-sm gap-2" title="Settings">
             <Settings className="w-4 h-4" />
             <span className="hidden sm:inline">Settings</span>
           </Link>
-          
-          <Link 
-            to="/profile" 
-            className="btn btn-sm gap-2"
-            title="Profile"
-          >
+          <Link to="/profile" className="btn btn-sm gap-2" title="Profile">
             <User className="w-4 h-4" />
             <span className="hidden sm:inline">Profile</span>
           </Link>
-          
-          <button 
-            className="btn btn-sm gap-2" 
-            onClick={logout}
-            title="Logout"
-          >
+          <button className="btn btn-sm gap-2" onClick={logout} title="Logout">
             <LogOut className="w-4 h-4" />
             <span className="hidden sm:inline">Logout</span>
           </button>
         </div>
       </div>
 
-      <div className="flex flex-1 min-h-0">
-        <div className="flex flex-col">
+      {/* Content area */}
+      <div className="flex flex-1 flex-min-0">
+        {/* Left column: lists (full width on mobile when chat closed, fixed width on md+) */}
+        <div className={`${isChatOpen ? 'hidden' : 'flex'} md:flex flex-col shrink-0 w-full md:w-72 lg:w-80`}>
           <div className="flex bg-base-300">
             <button
               onClick={() => setActiveTab('contacts')}
@@ -121,9 +105,12 @@ const ChatPage = () => {
           )}
         </div>
 
-        <ErrorBoundary>
-          <ChatContainer />
-        </ErrorBoundary>
+        {/* Right column: chat (full width on mobile when open) */}
+        <div className={`${isChatOpen ? 'flex' : 'hidden'} md:flex flex-1 min-w-0`}>
+          <ErrorBoundary>
+            <ChatContainer />
+          </ErrorBoundary>
+        </div>
       </div>
     </div>
   );
