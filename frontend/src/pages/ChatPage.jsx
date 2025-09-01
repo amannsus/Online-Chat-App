@@ -81,27 +81,28 @@ const ChatPage = () => {
     }
   }, [authUser, connectSocket]);
 
-  // Handle outside clicks for mobile sidebar
-  const handleOutsideClick = useCallback((e) => {
-    if (isSidebarOpen && 
-        !e.target.closest('.sidebar-container') && 
-        !e.target.closest('.sidebar-toggle') &&
-        window.innerWidth < 768) {
-      console.log('Closing sidebar from outside click');
-      setIsSidebarOpen(false);
-    }
-  }, [isSidebarOpen]);
-
+  // Handle outside clicks for mobile sidebar - SIMPLIFIED
   useEffect(() => {
-    if (window.innerWidth < 768) {
-      document.addEventListener('touchstart', handleOutsideClick);
-      document.addEventListener('click', handleOutsideClick);
-    }
-    return () => {
-      document.removeEventListener('touchstart', handleOutsideClick);
-      document.removeEventListener('click', handleOutsideClick);
+    const handleClick = (e) => {
+      if (isSidebarOpen && window.innerWidth < 768) {
+        const sidebar = document.querySelector('.sidebar-container');
+        const hamburger = e.target.closest('[data-hamburger]');
+        
+        if (!sidebar?.contains(e.target) && !hamburger) {
+          console.log('Closing sidebar - outside click');
+          setIsSidebarOpen(false);
+        }
+      }
     };
-  }, [handleOutsideClick]);
+
+    document.addEventListener('click', handleClick);
+    document.addEventListener('touchstart', handleClick);
+    
+    return () => {
+      document.removeEventListener('click', handleClick);
+      document.removeEventListener('touchstart', handleClick);
+    };
+  }, [isSidebarOpen]);
 
   // Prevent body scroll when sidebar is open on mobile
   useEffect(() => {
@@ -178,17 +179,32 @@ const ChatPage = () => {
         <div className="flex items-center justify-between p-2 sm:p-3 md:p-4 min-h-[56px]">
           {/* Left Section */}
           <div className="flex items-center gap-2 flex-1 min-w-0">
-            <button 
-              className="sidebar-toggle md:hidden btn btn-ghost btn-sm btn-square hover:scale-105 active:scale-95 transition-transform"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                console.log('Sidebar toggle clicked!', isSidebarOpen); // Debug log
-                setIsSidebarOpen(!isSidebarOpen);
+            {/* HAMBURGER MENU - FIXED VERSION */}
+            <div 
+              className="md:hidden p-2 cursor-pointer hover:bg-base-300 rounded-lg active:bg-base-200 transition-colors"
+              onClick={() => {
+                console.log('HAMBURGER CLICKED! Current state:', isSidebarOpen);
+                setIsSidebarOpen(prev => {
+                  const newState = !prev;
+                  console.log('Setting sidebar to:', newState);
+                  return newState;
+                });
+              }}
+              onTouchStart={() => {
+                console.log('HAMBURGER TOUCHED!');
+              }}
+              data-hamburger="true"
+              style={{ 
+                zIndex: 9999,
+                minWidth: '44px',
+                minHeight: '44px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
               }}
             >
-              <Menu className="w-5 h-5" />
-            </button>
+              <Menu className="w-6 h-6 text-base-content" />
+            </div>
             
             <div className="flex items-center gap-2 min-w-0 flex-1">
               <div className="size-8 sm:size-9 md:size-10 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center shadow-lg">
@@ -294,94 +310,70 @@ const ChatPage = () => {
 
       {/* Main Content Area */}
       <div className="flex flex-1 relative overflow-hidden">
-        {/* Sidebar with enhanced mobile optimization */}
-        <aside className={`
+        {/* Sidebar - COMPLETELY REWRITTEN FOR MOBILE */}
+        <div className={`
           sidebar-container
           fixed md:static
-          top-0 md:top-0
-          left-0
-          w-72 sm:w-80 md:w-80
+          top-0 left-0
+          w-80 max-w-[90vw]
+          h-screen
           bg-base-200
           border-r border-base-300
-          z-40
-          transform transition-all duration-300 ease-out
-          shadow-2xl md:shadow-none
-          ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
-        `}
-        style={{ 
-          height: '100vh',
-          paddingTop: window.innerWidth < 768 ? '56px' : '0'
-        }}>
-          {console.log('Sidebar render - isOpen:', isSidebarOpen)}
-          {/* Tab Navigation with improved mobile design */}
-          <div className="flex bg-base-300 sticky top-0 z-10 shadow-sm">
-            <button
-              onClick={() => {
-                console.log('Contacts tab clicked');
-                setActiveTab('contacts');
-              }}
-              className={`flex-1 flex items-center justify-center gap-2 px-3 py-3 text-sm font-medium transition-all duration-200 ${
-                activeTab === 'contacts'
-                  ? 'bg-base-100 text-primary border-b-2 border-primary shadow-sm'
-                  : 'text-base-content/70 hover:text-base-content hover:bg-base-100/50'
-              }`}
-            >
-              <MessageSquare className="size-4" />
-              <span>Contacts</span>
-            </button>
-            <button
-              onClick={() => {
-                console.log('Groups tab clicked');
-                setActiveTab('groups');
-              }}
-              className={`flex-1 flex items-center justify-center gap-2 px-3 py-3 text-sm font-medium transition-all duration-200 ${
-                activeTab === 'groups'
-                  ? 'bg-base-100 text-primary border-b-2 border-primary shadow-sm'
-                  : 'text-base-content/70 hover:text-base-content hover:bg-base-100/50'
-              }`}
-            >
-              <Users className="size-4" />
-              <span>Groups</span>
-            </button>
-          </div>
-
-          {/* Sidebar Content with smooth transitions */}
-          <div className="h-full overflow-hidden">
-            {activeTab === 'contacts' ? (
-              <ErrorBoundary>
-                <div 
-                  className="h-full" 
-                  onClick={() => {
-                    console.log('Contact clicked, closing sidebar on mobile');
-                    if (window.innerWidth < 768) setIsSidebarOpen(false);
-                  }}
-                >
-                  <Sidebar />
+          z-50
+          transform transition-transform duration-300 ease-in-out
+          ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+          md:translate-x-0 md:relative md:z-auto
+        `}>
+          {/* Add padding for mobile header */}
+          <div className="md:hidden h-16"></div>
+          
+          {/* Sidebar Content */}
+          <div className="h-full overflow-hidden flex flex-col">
+            {/* Tabs */}
+            <div className="flex bg-base-300 border-b border-base-300">
+              <button
+                onClick={() => setActiveTab('contacts')}
+                className={`flex-1 py-3 px-4 text-sm font-medium transition-colors ${
+                  activeTab === 'contacts' 
+                    ? 'bg-base-100 text-primary border-b-2 border-primary' 
+                    : 'text-base-content/70 hover:text-base-content'
+                }`}
+              >
+                <div className="flex items-center justify-center gap-2">
+                  <MessageSquare className="size-4" />
+                  Contacts
                 </div>
-              </ErrorBoundary>
-            ) : (
-              <ErrorBoundary>
-                <div 
-                  className="h-full" 
-                  onClick={() => {
-                    console.log('Group clicked, closing sidebar on mobile');
-                    if (window.innerWidth < 768) setIsSidebarOpen(false);
-                  }}
-                >
-                  <GroupSidebar />
+              </button>
+              <button
+                onClick={() => setActiveTab('groups')}
+                className={`flex-1 py-3 px-4 text-sm font-medium transition-colors ${
+                  activeTab === 'groups' 
+                    ? 'bg-base-100 text-primary border-b-2 border-primary' 
+                    : 'text-base-content/70 hover:text-base-content'
+                }`}
+              >
+                <div className="flex items-center justify-center gap-2">
+                  <Users className="size-4" />
+                  Groups
                 </div>
+              </button>
+            </div>
+            
+            {/* Content */}
+            <div className="flex-1 overflow-hidden">
+              <ErrorBoundary>
+                {activeTab === 'contacts' ? <Sidebar /> : <GroupSidebar />}
               </ErrorBoundary>
-            )}
+            </div>
           </div>
-        </aside>
+        </div>
 
-        {/* Enhanced Mobile Sidebar Overlay */}
-        {isSidebarOpen && window.innerWidth < 768 && (
+        {/* Mobile Overlay - SIMPLIFIED */}
+        {isSidebarOpen && (
           <div 
-            className="fixed inset-0 bg-black/60 z-30 transition-opacity duration-300 backdrop-blur-sm"
-            style={{ top: '56px' }}
+            className="fixed inset-0 bg-black/50 z-40 md:hidden"
             onClick={() => {
-              console.log('Overlay clicked, closing sidebar');
+              console.log('Overlay clicked - closing sidebar');
               setIsSidebarOpen(false);
             }}
           />
