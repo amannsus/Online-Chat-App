@@ -21,7 +21,7 @@ const ChatPage = () => {
 
   if (!authUser) {
     return (
-      <div className="flex items-center justify-center h-screen">
+      <div className="flex items-center justify-center h-[100dvh]">
         <div className="text-center">
           <h2 className="text-xl font-semibold">Please log in to access chat</h2>
         </div>
@@ -30,7 +30,7 @@ const ChatPage = () => {
   }
 
   return (
-    <div className="h-screen bg-base-200 flex flex-col">
+    <div className="h-[100dvh] min-h-[100dvh] bg-base-200 flex flex-col safe-bottom">
       <div className="flex items-center justify-between w-full p-4 border-b border-base-300">
         <div className="flex items-center gap-3">
           <div className="size-10 rounded-full bg-primary/10 flex items-center justify-center">
@@ -83,7 +83,7 @@ const ChatPage = () => {
         </div>
       </div>
 
-      <div className="flex h-[calc(100vh-5rem)]">
+      <div className="flex flex-1 min-h-0">
         <div className="flex flex-col">
           <div className="flex bg-base-300">
             <button
