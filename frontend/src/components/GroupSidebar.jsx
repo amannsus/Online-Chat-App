@@ -22,9 +22,7 @@ const GroupSidebar = () => {
     loadGroups();
   }, [loadGroups]);
 
-  // Add safety checks for array operations
   const safeGroups = Array.isArray(groups) ? groups : [];
-  
   const filteredGroups = safeGroups.filter(group =>
     group.name?.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -47,7 +45,7 @@ const GroupSidebar = () => {
   };
 
   return (
-    <div className="w-80 bg-base-200 border-r border-base-300 flex flex-col">
+    <div className="w-64 md:w-72 bg-base-200 border-r border-base-300 flex flex-col">
       <div className="p-4 border-b border-base-300">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold flex items-center gap-2">
@@ -164,7 +162,7 @@ const GroupSidebar = () => {
       <CreateGroupModal
         isOpen={showCreateGroup}
         onClose={() => setShowCreateGroup(false)}
-        onGroupCreated={(newGroup) => {
+        onGroupCreated={() => {
           setShowCreateGroup(false);
           loadGroups();
         }}
