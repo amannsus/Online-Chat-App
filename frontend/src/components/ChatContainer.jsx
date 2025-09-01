@@ -1,9 +1,8 @@
 import React, { useRef, useEffect, useState, useCallback, useMemo } from "react";
-import { SendHorizontal, Paperclip, Smile, Image, FileText, X, Users, Settings, LogOut, Trash2, Camera, Mic, MicOff } from "lucide-react";
+import { SendHorizontal, Paperclip, Smile, Image, FileText, X, Users, Settings, LogOut, Trash2, Camera, Mic, MicOff, ArrowLeft } from "lucide-react";
 import { useAuthStore } from "../store/useAuthStore";
 import { useChatStore } from "../store/useChatStore";
 import EmojiPicker from 'emoji-picker-react';
-import GroupSettingsModal from './GroupSettingsModal';
 
 const ChatContainer = () => {
   const { authUser } = useAuthStore();
@@ -16,7 +15,8 @@ const ChatContainer = () => {
     loadMessages,
     clearIndividualChat,
     clearGroupChat,
-    getMessageRetentionInfo
+    setSelectedContact,
+    setSelectedGroup
   } = useChatStore();
 
   const [message, setMessage] = useState("");
@@ -26,8 +26,6 @@ const ChatContainer = () => {
   const [filePreview, setFilePreview] = useState(null);
   const [showGroupSettings, setShowGroupSettings] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
-  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
-  const [containerHeight, setContainerHeight] = useState('100vh');
 
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -43,31 +41,11 @@ const ChatContainer = () => {
   const isGroupChat = !!selectedGroup;
   const chatId = currentChat?._id;
 
-  // Handle viewport changes and keyboard visibility
-  useEffect(() => {
-    const handleResize = () => {
-      const vh = window.innerHeight * 0.01;
-      document.documentElement.style.setProperty('--vh', `${vh}px`);
-      setContainerHeight(`${window.innerHeight}px`);
-      
-      // Detect virtual keyboard on mobile
-      if (window.innerWidth < 768) {
-        const heightDiff = window.screen.height - window.innerHeight;
-        setIsKeyboardVisible(heightDiff > 150);
-      }
-    };
-
-    handleResize();
-    window.addEventListener('resize', handleResize);
-    window.addEventListener('orientationchange', () => {
-      setTimeout(handleResize, 300);
-    });
-
-    return () => {
-      window.removeEventListener('resize', handleResize);
-      window.removeEventListener('orientationchange', handleResize);
-    };
-  }, []);
+  // Handle back button for mobile
+  const handleBackButton = () => {
+    setSelectedContact(null);
+    setSelectedGroup(null);
+  };
 
   // Load messages when chat changes
   useEffect(() => {
@@ -76,9 +54,9 @@ const ChatContainer = () => {
     }
   }, [chatId, loadMessages]);
 
-  const currentMessages = chatId ? messages[chatId] || [] : [];
+  const currentMessages = chatId && messages ? (messages[chatId] || []) : [];
 
-  // Auto-scroll to bottom with smooth behavior
+  // Auto-scroll to bottom
   const scrollToBottom = useCallback(() => {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ 
@@ -89,12 +67,11 @@ const ChatContainer = () => {
   }, []);
 
   useEffect(() => {
-    // Delay scroll to ensure DOM is updated
     const timeoutId = setTimeout(scrollToBottom, 100);
     return () => clearTimeout(timeoutId);
   }, [currentMessages, scrollToBottom]);
 
-  // Handle outside clicks for dropdowns
+  // Handle outside clicks
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (emojiPickerRef.current && !emojiPickerRef.current.contains(event.target)) {
@@ -130,7 +107,6 @@ const ChatContainer = () => {
       setShowEmojiPicker(false);
       setShowAttachMenu(false);
       
-      // Focus back to input after sending
       if (messageInputRef.current) {
         messageInputRef.current.focus();
       }
@@ -140,20 +116,11 @@ const ChatContainer = () => {
   }, [message, selectedFile, filePreview, chatId, sendMessage]);
 
   const handleKeyPress = useCallback((e) => {
-    if (e.key === "Enter") {
-      if (e.shiftKey) {
-        // Allow new line with Shift+Enter
-        return;
-      } else {
-        e.preventDefault();
-        handleSend();
-      }
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
     }
   }, [handleSend]);
-
-  const handleMessageChange = useCallback((e) => {
-    setMessage(e.target.value);
-  }, []);
 
   const onEmojiClick = useCallback((emojiObject) => {
     setMessage(prev => prev + emojiObject.emoji);
@@ -162,7 +129,7 @@ const ChatContainer = () => {
     }
   }, []);
 
-  const handleFileSelect = useCallback((e, type) => {
+  const handleFileSelect = useCallback((e) => {
     const file = e.target.files[0];
     if (file) {
       setSelectedFile(file);
@@ -208,7 +175,6 @@ const ChatContainer = () => {
 
       mediaRecorderRef.current.onstop = () => {
         const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
-        // Handle audio file here - you can send it as a message
         console.log('Audio recorded:', audioBlob);
         stream.getTracks().forEach(track => track.stop());
       };
@@ -227,17 +193,20 @@ const ChatContainer = () => {
     }
   };
 
-  // Memoized message renderer for better performance
+  // Message renderer
   const renderMessage = useCallback((msg, index) => {
-    const isCurrentUser = msg.senderId === authUser._id || msg.senderId?._id === authUser._id;
+    if (!msg || !authUser) return null;
+    
+    const senderId = typeof msg.senderId === 'object' ? msg.senderId._id : msg.senderId;
+    const isCurrentUser = senderId === authUser._id;
     const senderName = msg.senderId?.fullName || 'Unknown';
     
-    const messageKey = msg._id || `msg_${index}_${msg.senderId}_${msg.createdAt}_${msg.text?.substring(0, 10)}`;
+    const messageKey = msg._id || `msg_${index}_${senderId}_${msg.createdAt}`;
     
     return (
       <div
         key={messageKey}
-        className={`flex ${isCurrentUser ? "justify-end" : "justify-start"} mb-3 px-2 sm:px-4 animate-fadeIn`}
+        className={`flex ${isCurrentUser ? "justify-end" : "justify-start"} mb-3 px-2 sm:px-4`}
       >
         <div className="flex items-end gap-2 max-w-[85%] sm:max-w-[75%] md:max-w-md lg:max-w-lg">
           {!isCurrentUser && (
@@ -287,25 +256,6 @@ const ChatContainer = () => {
               </div>
             )}
             
-            {msg.file && !msg.file.type?.startsWith('image/') && (
-              <div className="mt-2 p-3 bg-base-100 rounded-lg border border-base-300">
-                <div className="flex items-center gap-2">
-                  <FileText className="w-4 h-4 flex-shrink-0" />
-                  <span className="text-sm font-medium truncate">{msg.file.name}</span>
-                </div>
-                <p className="text-xs text-base-content/70 mt-1">
-                  {formatFileSize(msg.file.size)}
-                </p>
-                <a 
-                  href={msg.file.url} 
-                  download={msg.file.name}
-                  className="text-xs text-primary hover:underline mt-1 inline-block"
-                >
-                  Download
-                </a>
-              </div>
-            )}
-            
             <div className="flex items-center justify-between mt-2">
               <p className="text-xs opacity-70">
                 {new Date(msg.createdAt || Date.now()).toLocaleTimeString([], { 
@@ -313,76 +263,12 @@ const ChatContainer = () => {
                   minute: "2-digit" 
                 })}
               </p>
-              
-              {isCurrentUser && msg.sent && (
-                <span className="text-xs opacity-70 ml-2">
-                  ✓ Sent
-                </span>
-              )}
             </div>
           </div>
         </div>
       </div>
     );
-  }, [authUser._id, isGroupChat, formatFileSize]);
-
-  const attachmentMenu = useMemo(() => (
-    <div 
-      ref={attachMenuRef}
-      className={`absolute bottom-16 right-4 z-20 bg-base-200 shadow-xl rounded-xl p-2 border border-base-300 transform transition-all duration-200 ${
-        showAttachMenu 
-          ? 'opacity-100 scale-100 translate-y-0' 
-          : 'opacity-0 scale-95 translate-y-2 pointer-events-none'
-      }`}
-    >
-      <button
-        onClick={() => cameraInputRef.current?.click()}
-        className="flex items-center gap-3 w-full p-3 hover:bg-base-300 rounded-lg text-left transition-colors"
-      >
-        <Camera className="w-5 h-5 text-primary" />
-        <span className="text-sm font-medium">Camera</span>
-      </button>
-      
-      <button
-        onClick={() => imageInputRef.current?.click()}
-        className="flex items-center gap-3 w-full p-3 hover:bg-base-300 rounded-lg text-left transition-colors"
-      >
-        <Image className="w-5 h-5 text-secondary" />
-        <span className="text-sm font-medium">Photo</span>
-      </button>
-      
-      <button
-        onClick={() => fileInputRef.current?.click()}
-        className="flex items-center gap-3 w-full p-3 hover:bg-base-300 rounded-lg text-left transition-colors"
-      >
-        <FileText className="w-5 h-5 text-accent" />
-        <span className="text-sm font-medium">Document</span>
-      </button>
-      
-      <input
-        ref={cameraInputRef}
-        type="file"
-        accept="image/*"
-        capture="environment"
-        onChange={(e) => handleFileSelect(e, 'camera')}
-        className="hidden"
-      />
-      <input
-        ref={imageInputRef}
-        type="file"
-        accept="image/*"
-        onChange={(e) => handleFileSelect(e, 'image')}
-        className="hidden"
-      />
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept=".pdf,.doc,.docx,.txt,.xls,.xlsx,.ppt,.pptx"
-        onChange={(e) => handleFileSelect(e, 'file')}
-        className="hidden"
-      />
-    </div>
-  ), [showAttachMenu, handleFileSelect]);
+  }, [authUser, isGroupChat]);
 
   if (!currentChat) {
     return (
@@ -402,23 +288,28 @@ const ChatContainer = () => {
     );
   }
 
+  const chatName = isGroupChat ? currentChat.name : currentChat.fullName;
+  const chatAvatar = currentChat.avatar || currentChat.profilePic;
+
   return (
-    <div 
-      className="flex flex-col h-full bg-base-100 relative"
-      style={{ 
-        height: isKeyboardVisible ? 'auto' : '100%',
-        minHeight: isKeyboardVisible ? '400px' : '100%'
-      }}
-    >
-      {/* Chat Header */}
+    <div className="flex flex-col h-full bg-base-100 relative">
+      {/* Chat Header - Fixed to show chat recipient */}
       <div className="p-3 sm:p-4 border-b border-base-300 bg-base-200/50 backdrop-blur-sm sticky top-0 z-10">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3 flex-1 min-w-0">
+            {/* Back button for mobile */}
+            <button
+              onClick={handleBackButton}
+              className="btn btn-ghost btn-sm btn-square md:hidden"
+            >
+              <ArrowLeft className="size-5" />
+            </button>
+            
             <div className="size-10 sm:size-12 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-              {currentChat.avatar || currentChat.profilePic ? (
+              {chatAvatar ? (
                 <img 
-                  src={currentChat.avatar || currentChat.profilePic} 
-                  alt={currentChat.name || currentChat.fullName} 
+                  src={chatAvatar} 
+                  alt={chatName} 
                   className="size-10 sm:size-12 rounded-full object-cover"
                 />
               ) : (
@@ -426,7 +317,7 @@ const ChatContainer = () => {
                   {isGroupChat ? (
                     <Users className="size-5 sm:size-6" />
                   ) : (
-                    currentChat.fullName?.charAt(0) || 'U'
+                    chatName?.charAt(0) || 'U'
                   )}
                 </span>
               )}
@@ -434,7 +325,7 @@ const ChatContainer = () => {
             
             <div className="flex-1 min-w-0">
               <h3 className="font-semibold text-sm sm:text-base truncate">
-                {isGroupChat ? currentChat.name : currentChat.fullName}
+                {chatName}
               </h3>
               <p className="text-xs sm:text-sm text-base-content/70 truncate">
                 {isGroupChat 
@@ -460,8 +351,8 @@ const ChatContainer = () => {
             <button 
               onClick={async () => {
                 const confirmMessage = isGroupChat 
-                  ? `Clear all messages in "${currentChat.name}"?`
-                  : `Clear all messages with ${currentChat.fullName}?`;
+                  ? `Clear all messages in "${chatName}"?`
+                  : `Clear all messages with ${chatName}?`;
                 
                 if (window.confirm(confirmMessage)) {
                   if (isGroupChat) {
@@ -483,7 +374,7 @@ const ChatContainer = () => {
       {/* Messages Container */}
       <div 
         ref={messagesContainerRef}
-        className="flex-1 overflow-y-auto overflow-x-hidden bg-gradient-to-b from-base-100 to-base-200/30 min-h-0"
+        className="flex-1 overflow-y-auto overflow-x-hidden bg-gradient-to-b from-base-100 to-base-200/30"
         style={{
           WebkitOverflowScrolling: 'touch',
           scrollBehavior: 'smooth'
@@ -553,7 +444,61 @@ const ChatContainer = () => {
         )}
 
         {/* Attachment Menu */}
-        {attachmentMenu}
+        <div 
+          ref={attachMenuRef}
+          className={`absolute bottom-16 right-4 z-20 bg-base-200 shadow-xl rounded-xl p-2 border border-base-300 transform transition-all duration-200 ${
+            showAttachMenu 
+              ? 'opacity-100 scale-100 translate-y-0' 
+              : 'opacity-0 scale-95 translate-y-2 pointer-events-none'
+          }`}
+        >
+          <button
+            onClick={() => cameraInputRef.current?.click()}
+            className="flex items-center gap-3 w-full p-3 hover:bg-base-300 rounded-lg text-left transition-colors"
+          >
+            <Camera className="w-5 h-5 text-primary" />
+            <span className="text-sm font-medium">Camera</span>
+          </button>
+          
+          <button
+            onClick={() => imageInputRef.current?.click()}
+            className="flex items-center gap-3 w-full p-3 hover:bg-base-300 rounded-lg text-left transition-colors"
+          >
+            <Image className="w-5 h-5 text-secondary" />
+            <span className="text-sm font-medium">Photo</span>
+          </button>
+          
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            className="flex items-center gap-3 w-full p-3 hover:bg-base-300 rounded-lg text-left transition-colors"
+          >
+            <FileText className="w-5 h-5 text-accent" />
+            <span className="text-sm font-medium">Document</span>
+          </button>
+          
+          <input
+            ref={cameraInputRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            onChange={handleFileSelect}
+            className="hidden"
+          />
+          <input
+            ref={imageInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handleFileSelect}
+            className="hidden"
+          />
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".pdf,.doc,.docx,.txt,.xls,.xlsx,.ppt,.pptx"
+            onChange={handleFileSelect}
+            className="hidden"
+          />
+        </div>
 
         {/* Input Controls */}
         <div className="flex items-end gap-2">
@@ -569,12 +514,12 @@ const ChatContainer = () => {
             <textarea
               ref={messageInputRef}
               value={message}
-              onChange={handleMessageChange}
+              onChange={(e) => setMessage(e.target.value)}
               onKeyPress={handleKeyPress}
-              placeholder={`Message ${isGroupChat ? currentChat.name : currentChat.fullName}...`}
+              placeholder={`Message ${chatName}...`}
               className="textarea textarea-bordered w-full resize-none min-h-[44px] max-h-32 text-base pr-12"
               rows={1}
-              style={{ fontSize: '16px' }} // Prevent zoom on iOS
+              style={{ fontSize: '16px' }}
             />
             
             <button
@@ -610,48 +555,6 @@ const ChatContainer = () => {
           )}
         </div>
       </div>
-
-      {/* Group Settings Modal */}
-      <GroupSettingsModal 
-        isOpen={showGroupSettings} 
-        onClose={() => setShowGroupSettings(false)} 
-        group={currentChat} 
-        onGroupUpdated={(updatedGroup) => {
-          // Handle group updates
-        }}
-      />
-
-      {/* Custom Styles */}
-      <style jsx>{`
-        @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(10px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        
-        .animate-fadeIn {
-          animation: fadeIn 0.3s ease-out;
-        }
-        
-        /* Smooth scrolling optimization */
-        .messages-container {
-          scroll-behavior: smooth;
-          -webkit-overflow-scrolling: touch;
-          overscroll-behavior: contain;
-        }
-        
-        /* Better mobile textarea */
-        textarea {
-          font-family: inherit;
-          line-height: 1.5;
-        }
-        
-        /* iOS specific fixes */
-        @supports (-webkit-touch-callout: none) {
-          textarea {
-            transform: translateZ(0);
-          }
-        }
-      `}</style>
     </div>
   );
 };
