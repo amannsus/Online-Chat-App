@@ -48,7 +48,7 @@ A modern, real-time chat application built with **React**, **Node.js**, **Socket
 
 ## 🎥 Demo Preview
 
-![Yap! Demo]("https://yappinng.netlify.app/")
+"https://yappinng.netlify.app/"
 
 ---
 
