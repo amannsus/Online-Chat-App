@@ -1,5 +1,5 @@
-import React, { useRef, useEffect, useState, useCallback, useMemo } from "react";
-import { SendHorizontal, Paperclip, Smile, Image, FileText, X, Users, Settings, LogOut, Trash2, Camera, Mic, MicOff, ArrowLeft } from "lucide-react";
+import React, { useRef, useEffect, useState, useCallback } from "react";
+import { SendHorizontal, Paperclip, Smile, Image, FileText, X, Users, Settings, Trash2, Camera, ArrowLeft } from "lucide-react";
 import { useAuthStore } from "../store/useAuthStore";
 import { useChatStore } from "../store/useChatStore";
 import EmojiPicker from 'emoji-picker-react';
@@ -11,7 +11,6 @@ const ChatContainer = () => {
     selectedGroup,
     messages, 
     sendMessage, 
-    contacts, 
     loadMessages,
     clearIndividualChat,
     clearGroupChat,
@@ -25,7 +24,6 @@ const ChatContainer = () => {
   const [selectedFile, setSelectedFile] = useState(null);
   const [filePreview, setFilePreview] = useState(null);
   const [showGroupSettings, setShowGroupSettings] = useState(false);
-  const [isRecording, setIsRecording] = useState(false);
 
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -35,19 +33,16 @@ const ChatContainer = () => {
   const attachMenuRef = useRef(null);
   const messageInputRef = useRef(null);
   const messagesContainerRef = useRef(null);
-  const mediaRecorderRef = useRef(null);
 
   const currentChat = selectedContact || selectedGroup;
   const isGroupChat = !!selectedGroup;
   const chatId = currentChat?._id;
 
-  // Handle back button for mobile
   const handleBackButton = () => {
     setSelectedContact(null);
     setSelectedGroup(null);
   };
 
-  // Load messages when chat changes
   useEffect(() => {
     if (chatId) {
       loadMessages(chatId);
@@ -56,7 +51,6 @@ const ChatContainer = () => {
 
   const currentMessages = chatId && messages ? (messages[chatId] || []) : [];
 
-  // Auto-scroll to bottom
   const scrollToBottom = useCallback(() => {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ 
@@ -71,7 +65,6 @@ const ChatContainer = () => {
     return () => clearTimeout(timeoutId);
   }, [currentMessages, scrollToBottom]);
 
-  // Handle outside clicks
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (emojiPickerRef.current && !emojiPickerRef.current.contains(event.target)) {
@@ -107,9 +100,7 @@ const ChatContainer = () => {
       setShowEmojiPicker(false);
       setShowAttachMenu(false);
       
-      if (messageInputRef.current) {
-        messageInputRef.current.focus();
-      }
+      messageInputRef.current?.focus();
     } catch (error) {
       console.error('Send message error:', error);
     }
@@ -124,13 +115,11 @@ const ChatContainer = () => {
 
   const onEmojiClick = useCallback((emojiObject) => {
     setMessage(prev => prev + emojiObject.emoji);
-    if (messageInputRef.current) {
-      messageInputRef.current.focus();
-    }
+    messageInputRef.current?.focus();
   }, []);
 
   const handleFileSelect = useCallback((e) => {
-    const file = e.target.files[0];
+    const file = e.target.files;
     if (file) {
       setSelectedFile(file);
       
@@ -162,38 +151,6 @@ const ChatContainer = () => {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   }, []);
 
-  // Voice recording functions
-  const startRecording = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      mediaRecorderRef.current = new MediaRecorder(stream);
-      const audioChunks = [];
-
-      mediaRecorderRef.current.ondataavailable = (event) => {
-        audioChunks.push(event.data);
-      };
-
-      mediaRecorderRef.current.onstop = () => {
-        const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
-        console.log('Audio recorded:', audioBlob);
-        stream.getTracks().forEach(track => track.stop());
-      };
-
-      mediaRecorderRef.current.start();
-      setIsRecording(true);
-    } catch (error) {
-      console.error('Error starting recording:', error);
-    }
-  };
-
-  const stopRecording = () => {
-    if (mediaRecorderRef.current && isRecording) {
-      mediaRecorderRef.current.stop();
-      setIsRecording(false);
-    }
-  };
-
-  // Message renderer
   const renderMessage = useCallback((msg, index) => {
     if (!msg || !authUser) return null;
     
@@ -293,11 +250,10 @@ const ChatContainer = () => {
 
   return (
     <div className="flex flex-col h-full bg-base-100 relative">
-      {/* Chat Header - Fixed to show chat recipient */}
+      {/* Header */}
       <div className="p-3 sm:p-4 border-b border-base-300 bg-base-200/50 backdrop-blur-sm sticky top-0 z-10">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3 flex-1 min-w-0">
-            {/* Back button for mobile */}
             <button
               onClick={handleBackButton}
               className="btn btn-ghost btn-sm btn-square md:hidden"
@@ -336,7 +292,6 @@ const ChatContainer = () => {
             </div>
           </div>
 
-          {/* Header Actions */}
           <div className="flex items-center gap-1 sm:gap-2">
             {isGroupChat && (
               <button 
@@ -371,7 +326,7 @@ const ChatContainer = () => {
         </div>
       </div>
 
-      {/* Messages Container */}
+      {/* Messages */}
       <div 
         ref={messagesContainerRef}
         className="flex-1 overflow-y-auto overflow-x-hidden bg-gradient-to-b from-base-100 to-base-200/30"
@@ -531,28 +486,15 @@ const ChatContainer = () => {
             </button>
           </div>
 
-          {/* Voice/Send Button */}
-          {message.trim() || selectedFile ? (
-            <button
-              onClick={handleSend}
-              disabled={!message.trim() && !selectedFile}
-              className="btn btn-primary btn-sm btn-square flex-shrink-0"
-              type="button"
-            >
-              <SendHorizontal className="size-5" />
-            </button>
-          ) : (
-            <button
-              onMouseDown={startRecording}
-              onMouseUp={stopRecording}
-              onTouchStart={startRecording}
-              onTouchEnd={stopRecording}
-              className={`btn btn-sm btn-square flex-shrink-0 ${isRecording ? 'btn-error' : 'btn-secondary'}`}
-              type="button"
-            >
-              {isRecording ? <MicOff className="size-5" /> : <Mic className="size-5" />}
-            </button>
-          )}
+          {/* Always-visible Send button */}
+          <button
+            onClick={handleSend}
+            disabled={!message.trim() && !selectedFile}
+            className="btn btn-primary btn-sm btn-square flex-shrink-0"
+            type="button"
+          >
+            <SendHorizontal className="size-5" />
+          </button>
         </div>
       </div>
     </div>
