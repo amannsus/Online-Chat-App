@@ -2,12 +2,25 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Full-height app + safe-area support for iOS home indicator */
-:root, html, body, #root, .App {
-  height: 100%;
-  min-height: 100dvh; /* dynamic viewport height for mobile browser chrome */
+/* Full-height on mobile with browser UI changes */
+:root{
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
 }
 
-.safe-bottom {
-  padding-bottom: env(safe-area-inset-bottom, 0);
+/* Let the app stretch to the dynamic viewport */
+html, body, #root, .App {
+  height: 100%;
+  min-height: 100dvh;      /* dynamic vh */
+}
+
+/* Utilities to prevent flex overflow traps */
+.flex-min-0 { min-height: 0; min-width: 0; }
+
+/* Screens that must truly fill the device viewport */
+.chat-screen {
+  min-height: 100dvh;
+  padding-bottom: max(0px, var(--safe-bottom));
 }
