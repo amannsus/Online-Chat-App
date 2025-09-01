@@ -27,16 +27,12 @@ export const useChatStore = create((set, get) => ({
   addMessage: (chatId, message) =>
     set((state) => {
       const existingMessages = state.messages[chatId] || [];
-      const messageExists = existingMessages.some(msg => 
-        msg._id === message._id || 
-        (msg.text === message.text && msg.senderId === message.senderId && 
+      const messageExists = existingMessages.some(msg =>
+        msg._id === message._id ||
+        (msg.text === message.text && msg.senderId === message.senderId &&
          Math.abs(new Date(msg.createdAt) - new Date(message.createdAt)) < 1000)
       );
-      
-      if (messageExists) {
-        return state;
-      }
-
+      if (messageExists) return state;
       return {
         messages: {
           ...state.messages,
@@ -62,7 +58,7 @@ export const useChatStore = create((set, get) => ({
     } catch (error) {
       console.error('Search users error:', error);
       toast.error('Failed to search users');
-      return []; // Return empty array instead of throwing
+      return [];
     }
   },
 
@@ -83,7 +79,7 @@ export const useChatStore = create((set, get) => ({
       set({ friendRequests: Array.isArray(response.data) ? response.data : [] });
     } catch (error) {
       console.error('Error fetching friend requests:', error);
-      set({ friendRequests: [] }); // Ensure it's always an array
+      set({ friendRequests: [] });
     }
   },
 
@@ -103,7 +99,7 @@ export const useChatStore = create((set, get) => ({
   rejectFriendRequest: async (requestId) => {
     try {
       await axiosInstance.put(`/users/friend-request/${requestId}/reject`);
-      toast.success('Friend request rejected');
+      toast('Friend request rejected'); // info -> neutral toast
       get().getFriendRequests();
     } catch (error) {
       console.error('Reject friend request error:', error);
@@ -118,7 +114,7 @@ export const useChatStore = create((set, get) => ({
       set({ contacts: Array.isArray(response.data) ? response.data : [] });
     } catch (error) {
       console.error('Error loading contacts:', error);
-      set({ contacts: [] }); // Ensure it's always an array
+      set({ contacts: [] });
     }
   },
 
@@ -127,15 +123,13 @@ export const useChatStore = create((set, get) => ({
       const response = await axiosInstance.get('/groups');
       const groupsData = Array.isArray(response.data) ? response.data : [];
       set({ groups: groupsData });
-      
-      // Auto-join groups when they're loaded
       if (get().isConnected && groupsData.length > 0) {
         const groupIds = groupsData.map(g => g._id);
         socket.emit('joinGroups', groupIds);
       }
     } catch (error) {
       console.error('Error loading groups:', error);
-      set({ groups: [] }); // Ensure it's always an array
+      set({ groups: [] });
     }
   },
 
@@ -143,11 +137,7 @@ export const useChatStore = create((set, get) => ({
     try {
       const response = await axiosInstance.post('/groups', groupData);
       const newGroup = response.data;
-      
-      set((state) => ({
-        groups: [...(state.groups || []), newGroup]
-      }));
-      
+      set((state) => ({ groups: [...(state.groups || []), newGroup] }));
       toast.success('Group created successfully!');
       return newGroup;
     } catch (error) {
@@ -161,14 +151,10 @@ export const useChatStore = create((set, get) => ({
     try {
       const response = await axiosInstance.put(`/groups/${groupId}`, updateData);
       const updatedGroup = response.data;
-      
       set((state) => ({
-        groups: (state.groups || []).map(g => 
-          g._id === groupId ? updatedGroup : g
-        ),
+        groups: (state.groups || []).map(g => (g._id === groupId ? updatedGroup : g)),
         selectedGroup: state.selectedGroup?._id === groupId ? updatedGroup : state.selectedGroup
       }));
-      
       toast.success('Group updated successfully!');
       return updatedGroup;
     } catch (error) {
@@ -181,12 +167,10 @@ export const useChatStore = create((set, get) => ({
   deleteGroup: async (groupId) => {
     try {
       await axiosInstance.delete(`/groups/${groupId}`);
-      
       set((state) => ({
         groups: (state.groups || []).filter(g => g._id !== groupId),
         selectedGroup: state.selectedGroup?._id === groupId ? null : state.selectedGroup
       }));
-      
       toast.success('Group deleted successfully!');
     } catch (error) {
       console.error('Delete group error:', error);
@@ -199,14 +183,10 @@ export const useChatStore = create((set, get) => ({
     try {
       const response = await axiosInstance.post(`/groups/${groupId}/members`, { userId });
       const updatedGroup = response.data;
-      
       set((state) => ({
-        groups: (state.groups || []).map(g => 
-          g._id === groupId ? updatedGroup : g
-        ),
+        groups: (state.groups || []).map(g => (g._id === groupId ? updatedGroup : g)),
         selectedGroup: state.selectedGroup?._id === groupId ? updatedGroup : state.selectedGroup
       }));
-      
       toast.success('Member added to group successfully!');
       return updatedGroup;
     } catch (error) {
@@ -220,15 +200,11 @@ export const useChatStore = create((set, get) => ({
     try {
       const response = await axiosInstance.delete(`/groups/${groupId}/members/${userId}`);
       const updatedGroup = response.data;
-      
       set((state) => ({
-        groups: (state.groups || []).map(g => 
-          g._id === groupId ? updatedGroup : g
-        ),
+        groups: (state.groups || []).map(g => (g._id === groupId ? updatedGroup : g)),
         selectedGroup: state.selectedGroup?._id === groupId ? updatedGroup : state.selectedGroup
       }));
-      
-      toast.success('Member removed from group successfully!');
+      toast('Member removed from group'); // info -> neutral toast
       return updatedGroup;
     } catch (error) {
       console.error('Remove member error:', error);
@@ -241,14 +217,12 @@ export const useChatStore = create((set, get) => ({
     try {
       const state = get();
       const isGroupChat = state.selectedGroup?._id === chatId;
-      
       let response;
       if (isGroupChat) {
         response = await axiosInstance.get(`/groups/${chatId}/messages`);
       } else {
         response = await axiosInstance.get(`/message/${chatId}`);
       }
-      
       set((state) => ({
         messages: {
           ...state.messages,
@@ -258,29 +232,17 @@ export const useChatStore = create((set, get) => ({
     } catch (error) {
       console.error('Error loading messages:', error);
       set((state) => ({
-        messages: {
-          ...state.messages,
-          [chatId]: []
-        }
+        messages: { ...state.messages, [chatId]: [] }
       }));
     }
   },
 
   initSocketListeners: () => {
-    if (get().socketInitialized) {
-      return;
-    }
-
+    if (get().socketInitialized) return;
     set({ socketInitialized: true });
 
-    socket.on('connect', () => {
-      set({ isConnected: true });
-    });
-
-    socket.on('disconnect', () => {
-      set({ isConnected: false });
-    });
-
+    socket.on('connect', () => set({ isConnected: true }));
+    socket.on('disconnect', () => set({ isConnected: false }));
     socket.on('connect_error', (error) => {
       console.error('Socket connection error:', error);
       set({ isConnected: false });
@@ -298,20 +260,9 @@ export const useChatStore = create((set, get) => ({
 
     socket.on('newMessage', (data) => {
       try {
-        if (!data || typeof data !== 'object') {
-          console.error('Invalid message data received: data is not an object', data);
-          return;
-        }
-
-        if (!data.senderId || !data.message) {
-          console.error('Invalid message data received: missing senderId or message', data);
-          return;
-        }
-
-        if (!data.message._id && !data.message.text) {
-          console.error('Invalid message data received: message missing _id and text', data);
-          return;
-        }
+        if (!data || typeof data !== 'object') return;
+        if (!data.senderId || !data.message) return;
+        if (!data.message._id && !data.message.text) return;
 
         const safeMessage = {
           _id: data.message._id || `temp_${Date.now()}_${Math.random()}`,
@@ -324,15 +275,13 @@ export const useChatStore = create((set, get) => ({
         };
 
         get().addMessage(data.senderId, safeMessage);
-        
+
         const currentContact = get().selectedContact;
         const currentGroup = get().selectedGroup;
-        if ((!currentContact || currentContact._id !== data.senderId) && 
+        if ((!currentContact || currentContact._id !== data.senderId) &&
             (!currentGroup || currentGroup._id !== data.senderId)) {
           const contact = (get().contacts || []).find(c => c._id === data.senderId);
-          if (contact) {
-            toast.success(`New message from ${contact.fullName}`);
-          }
+          if (contact) toast.success(`New message from ${contact.fullName}`);
         }
       } catch (error) {
         console.error('Error handling newMessage:', error);
@@ -341,11 +290,7 @@ export const useChatStore = create((set, get) => ({
 
     socket.on('newGroupMessage', (data) => {
       try {
-        if (!data || !data.groupId || !data.message) {
-          console.error('Invalid group message data received:', data);
-          return;
-        }
-
+        if (!data || !data.groupId || !data.message) return;
         const safeMessage = {
           _id: data.message._id || `group_${Date.now()}_${Math.random()}`,
           senderId: data.message.senderId,
@@ -355,9 +300,8 @@ export const useChatStore = create((set, get) => ({
           createdAt: data.message.createdAt || new Date().toISOString(),
           ...data.message
         };
-
         get().addMessage(data.groupId, safeMessage);
-        
+
         const currentGroup = get().selectedGroup;
         if (!currentGroup || currentGroup._id !== data.groupId) {
           const group = (get().groups || []).find(g => g._id === data.groupId);
@@ -373,11 +317,7 @@ export const useChatStore = create((set, get) => ({
 
     socket.on('groupMessage', (data) => {
       try {
-        if (!data || !data.groupId || !data.message) {
-          console.error('Invalid group message data received:', data);
-          return;
-        }
-
+        if (!data || !data.groupId || !data.message) return;
         const safeMessage = {
           _id: data.message._id || `group_${Date.now()}_${Math.random()}`,
           senderId: data.message.senderId,
@@ -387,9 +327,8 @@ export const useChatStore = create((set, get) => ({
           createdAt: data.message.createdAt || new Date().toISOString(),
           ...data.message
         };
-
         get().addMessage(data.groupId, safeMessage);
-        
+
         const currentGroup = get().selectedGroup;
         if (!currentGroup || currentGroup._id !== data.groupId) {
           const group = (get().groups || []).find(g => g._id === data.groupId);
@@ -408,14 +347,14 @@ export const useChatStore = create((set, get) => ({
         if (data.delivered) {
           toast.success('Message delivered');
         } else {
-          toast.info('Message sent (user offline)');
+          toast('Message sent (user offline)'); // info -> neutral toast
         }
       } catch (error) {
         console.error('Error handling messageDelivered:', error);
       }
     });
 
-    socket.on('groupMessageDelivered', (data) => {
+    socket.on('groupMessageDelivered', () => {
       try {
         toast.success('Group message sent');
       } catch (error) {
@@ -425,9 +364,7 @@ export const useChatStore = create((set, get) => ({
 
     socket.on('onlineUsers', (userIds) => {
       try {
-        if (Array.isArray(userIds)) {
-          get().setOnlineUsers(userIds);
-        }
+        if (Array.isArray(userIds)) get().setOnlineUsers(userIds);
       } catch (error) {
         console.error('Error handling onlineUsers:', error);
       }
@@ -450,7 +387,7 @@ export const useChatStore = create((set, get) => ({
         const { groupId, removedMember } = data || {};
         if (groupId && removedMember) {
           get().loadGroups();
-          toast.info(`${removedMember.fullName} was removed from the group`);
+          toast('A member was removed from the group'); // info -> neutral toast
         }
       } catch (error) {
         console.error('Error handling memberRemoved:', error);
@@ -475,7 +412,6 @@ export const useChatStore = create((set, get) => ({
         const { groupId, group } = data || {};
         if (groupId && group) {
           get().loadGroups();
-          
           const currentGroup = get().selectedGroup;
           if (currentGroup && currentGroup._id === groupId) {
             set({ selectedGroup: group });
@@ -483,19 +419,6 @@ export const useChatStore = create((set, get) => ({
         }
       } catch (error) {
         console.error('Error handling groupUpdated:', error);
-      }
-    });
-
-    socket.on('groupCreated', (data) => {
-      try {
-        const { group } = data || {};
-        if (group) {
-          get().loadGroups();
-          get().joinGroup(group._id);
-          toast.success(data.message || `You've been added to group "${group.name}"`);
-        }
-      } catch (error) {
-        console.error('Error handling groupCreated:', error);
       }
     });
 
@@ -514,20 +437,14 @@ export const useChatStore = create((set, get) => ({
       try {
         if (data.type === 'individual') {
           set((state) => ({
-            messages: {
-              ...state.messages,
-              [data.chatId]: []
-            }
+            messages: { ...state.messages, [data.chatId]: [] }
           }));
-          toast.info('Chat history was cleared by the other user');
+          toast('Chat history was cleared by the other user'); // info -> neutral toast
         } else if (data.type === 'group') {
           set((state) => ({
-            messages: {
-              ...state.messages,
-              [data.groupId]: []
-            }
+            messages: { ...state.messages, [data.groupId]: [] }
           }));
-          toast.info('Group chat history was cleared by admin');
+          toast('Group chat history was cleared by admin'); // info -> neutral toast
         }
       } catch (error) {
         console.error('Error handling chatHistoryCleared:', error);
@@ -539,10 +456,7 @@ export const useChatStore = create((set, get) => ({
     try {
       const isGroupChat = get().selectedGroup?._id === chatId;
       const currentChat = isGroupChat ? get().selectedGroup : get().selectedContact;
-
-      if (!currentChat) {
-        throw new Error('No chat selected');
-      }
+      if (!currentChat) throw new Error('No chat selected');
 
       const payload = {
         text: typeof messageData === 'string' ? messageData : messageData.text || '',
@@ -563,11 +477,7 @@ export const useChatStore = create((set, get) => ({
           createdAt: response.data.createdAt || new Date().toISOString(),
           sent: true
         };
-
-        socket.emit('sendGroupMessage', {
-          groupId: chatId,
-          message: newMessage
-        });
+        socket.emit('sendGroupMessage', { groupId: chatId, message: newMessage });
       } else {
         response = await axiosInstance.post(`/message/send/${chatId}`, payload);
         newMessage = {
@@ -579,11 +489,7 @@ export const useChatStore = create((set, get) => ({
           createdAt: response.data.createdAt || new Date().toISOString(),
           sent: true
         };
-
-        socket.emit('sendMessage', {
-          receiverId: chatId,
-          message: newMessage
-        });
+        socket.emit('sendMessage', { receiverId: chatId, message: newMessage });
       }
 
       get().addMessage(chatId, newMessage);
@@ -597,16 +503,10 @@ export const useChatStore = create((set, get) => ({
 
   clearIndividualChat: async (chatId) => {
     try {
-      // Use the correct backend route
       await axiosInstance.delete(`/message/clear/${chatId}`);
-      
       set((state) => ({
-        messages: {
-          ...state.messages,
-          [chatId]: []
-        }
+        messages: { ...state.messages, [chatId]: [] }
       }));
-
       toast.success('Chat history cleared successfully!');
     } catch (error) {
       console.error('Clear chat error:', error);
@@ -614,19 +514,13 @@ export const useChatStore = create((set, get) => ({
       throw error;
     }
   },
-  
+
   clearGroupChat: async (groupId) => {
     try {
-      // Use the correct backend route - groups have their own clear endpoint
       await axiosInstance.delete(`/message/group/${groupId}/clear`);
-      
       set((state) => ({
-        messages: {
-          ...state.messages,
-          [groupId]: []
-        }
+        messages: { ...state.messages, [groupId]: [] }
       }));
-
       toast.success('Group chat history cleared successfully!');
     } catch (error) {
       console.error('Clear group chat error:', error);
@@ -665,25 +559,18 @@ export const useChatStore = create((set, get) => ({
   },
 
   joinGroup: (groupId) => {
-    if (get().isConnected) {
-      socket.emit('joinGroups', [groupId]);
-    }
+    if (get().isConnected) socket.emit('joinGroups', [groupId]);
   },
 
   leaveGroup: async (groupId) => {
     try {
       await axiosInstance.post(`/groups/${groupId}/leave`);
-      
       set((state) => ({
         groups: (state.groups || []).filter(g => g._id !== groupId),
         selectedGroup: state.selectedGroup?._id === groupId ? null : state.selectedGroup
       }));
-
-      if (get().isConnected) {
-        socket.emit('leaveGroup', { groupId });
-      }
-      
-      toast.success('Left group successfully!');
+      if (get().isConnected) socket.emit('leaveGroup', { groupId });
+      toast('Left group successfully!'); // info -> neutral toast
     } catch (error) {
       console.error('Leave group error:', error);
       const errorMessage = error.response?.data?.error || 'Failed to leave group';
@@ -697,7 +584,6 @@ export const useChatStore = create((set, get) => ({
       socket.connect();
       socket.on('connect', () => {
         socket.emit('join', userId);
-        // Join all user's groups when connecting
         const groups = get().groups || [];
         if (groups.length > 0) {
           const groupIds = groups.map(g => g._id);
@@ -726,11 +612,7 @@ export const useChatStore = create((set, get) => ({
       return response.data;
     } catch (error) {
       console.error('Get message retention info error:', error);
-      return {
-        messageRetentionDays: 30,
-        autoDeleteMessages: false,
-        type: isGroup ? 'group' : 'individual'
-      };
+      return { messageRetentionDays: 30, autoDeleteMessages: false, type: isGroup ? 'group' : 'individual' };
     }
   }
 }));
