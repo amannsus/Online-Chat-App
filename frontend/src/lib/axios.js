@@ -1,21 +1,20 @@
 
 import axios from "axios";
 
-// Build a base URL that keeps cookies first-party
+
 const getBaseURL = () => {
-  // Local development talks directly to the backend
+  
   if (import.meta.env.MODE === "development" || import.meta.env.DEV) {
     return "http://localhost:5001/api";
   }
 
-  // In production, use same-origin so Netlify proxies /api to Render
-  // (configured in netlify.toml and public/_redirects)
+  
   return "/api";
 };
 
 export const axiosInstance = axios.create({
   baseURL: getBaseURL(),
-  withCredentials: true,          // send/receive the jwt cookie
+  withCredentials: true,          
   timeout: 15000,
   headers: {
     "Content-Type": "application/json",
@@ -31,7 +30,7 @@ axiosInstance.interceptors.response.use(
     const url = error.config?.url || "";
 
     if (status === 401) {
-      // Ignore the initial auth check to avoid flicker/loops
+  
       const isAuthCheck = url.includes("/auth/check");
       const onAuthPages = path.startsWith("/login") || path.startsWith("/signup");
 
